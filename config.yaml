@@ -1,101 +1,101 @@
-# * Settings marked with * are advanced settings that won't appear in the Streamlit page and can only be modified manually in config.py
-# recommend to set in streamlit page
+# * 带 * 标记的为高级设置，不会在 Streamlit 页面显示，只能手动在 config.py 中修改
+# 建议在 streamlit 页面中进行设置
 # -------------------
 # version: "3.0.0"
 # author: "Huanshere"
 # -------------------
 
-## ======================== Basic Settings ======================== ##
+## ======================== 基础设置 ======================== ##
 
 display_language: "zh-CN"
 
-# API settings
+# API 设置
 api:
   key: 'your-api-key'
   base_url: 'https://yunwu.ai'
   model: 'gpt-4.1-2025-04-14'
   llm_support_json: false
-# *Number of LLM multi-threaded accesses, set to 1 if using local LLM
+# * LLM 多线程访问数量，使用本地 LLM 时设为 1
 max_workers: 4
 
-# Language settings, written into the prompt, can be described in natural language
+# 语言设置，写入 prompt 中，可用自然语言描述
 target_language: '简体中文'
 
-# Whether to use Demucs for vocal separation before transcription
+# 转录前是否使用 Demucs 进行人声分离
 demucs: true
 
 whisper:
-  # ["large-v3", "large-v3-turbo"]. Note: for zh model will force to use Belle/large-v3
+  # ["large-v3", "large-v3-turbo"]。注意：中文模型会强制使用 Belle/large-v3
   model: 'large-v3'
-  # Whisper specified recognition language ISO 639-1
+  # Whisper 指定识别语言，ISO 639-1 代码
   language: 'en'
   detected_language: 'en'
-  # Whisper running mode ["local", "cloud", "elevenlabs"]. Specifies where to run, cloud uses 302.ai API
+  # Whisper 运行模式 ["local", "cloud", "elevenlabs"]。指定运行位置，cloud 使用 302.ai API
   runtime: 'local'
-  # 302.ai API key
+  # 302.ai API 密钥
   whisperX_302_api_key: 'your_302_api_key'
-  # ElevenLabs API key (experimental)
+  # ElevenLabs API 密钥（实验性）
   elevenlabs_api_key: 'your_elevenlabs_api_key'
 
-# Whether to burn subtitles into the video
+# 是否将字幕烧录到视频中
 burn_subtitles: true
 
-## ======================== Advanced Settings ======================== ##
-# *🔬 h264_nvenc GPU acceleration for ffmpeg, make sure your GPU supports it
+## ======================== 高级设置 ======================== ##
+# * ffmpeg 使用 h264_nvenc GPU 加速，请确保 GPU 支持
 ffmpeg_gpu: false
 
-# *Youtube settings
+# * YouTube 设置
 youtube:
   cookies_path: ''
 
-# *Default resolution for downloading YouTube videos [360, 1080, best]
+# * 下载 YouTube 视频的默认分辨率 [360, 1080, best]
 ytb_resolution: '1080'
 
 subtitle:
-  # *Maximum length of each subtitle line in characters
+  # * 每行字幕的最大字符长度
   max_length: 75
-  # *Translated subtitles are slightly larger than source subtitles, affecting the reference length for subtitle splitting
+  # * 译文字幕比源字幕稍长，影响字幕分割的参考长度
   target_multiplier: 1.2
 
-# *Summary length, set low to 2k if using local LLM
+# * 摘要长度，使用本地 LLM 时建议设为 2000
 summary_length: 8000
 
-# *Maximum number of words for the first rough cut, below 18 will cut too finely affecting translation, above 22 is too long and will make subsequent subtitle splitting difficult to align
+# * 首次粗切的最大词数，低于 18 会导致切分过细影响翻译，高于 22 则过长会使后续字幕分割难以对齐
 max_split_length: 20
 
-# *Whether to reflect the translation result in the original text
+# * 是否在原文中反映翻译结果
 reflect_translate: true
 
-# *Whether to pause after extracting professional terms and before translation, allowing users to manually adjust the terminology table output\log\terminology.json
+# * 提取专业术语后、翻译前是否暂停，允许用户手动调整术语表 output\log\terminology.json
 pause_before_translate: false
 
-## ======================== Dubbing Settings ======================== ##
-# TTS selection [sf_fish_tts, openai_tts, gpt_sovits, azure_tts, fish_tts, edge_tts, custom_tts]
+## ======================== 配音设置 ======================== ##
+# TTS 选择 [sf_fish_tts, openai_tts, gpt_sovits, azure_tts, fish_tts, edge_tts, custom_tts]
 tts_method: 'azure_tts'
 
 # SiliconFlow FishTTS
 sf_fish_tts:
-  # SiliconFlow API key
+  # SiliconFlow API 密钥
   api_key: 'YOUR_API_KEY'
-  # only for mode "preset"
+  # 仅用于 mode "preset"
   voice: 'anna'
-  # *only for mode "custom", dont set manually
+  # * 仅用于 mode "custom"，请勿手动设置
   custom_name: ''
   voice_id: ''
   # preset, custom, dynamic
   mode: "preset"
 
-# OpenAI TTS-1 API configuration, 302.ai API only
+# OpenAI TTS-1 API 配置，仅支持 302.ai API
 openai_tts:
   api_key: 'YOUR_302_API_KEY'
   voice: 'alloy'
 
-# Azure configuration, 302.ai API only
+# Azure 配置，仅支持 302.ai API
 azure_tts:
   api_key: 'YOUR_302_API_KEY'
   voice: 'zh-CN-YunfengNeural'
 
-# FishTTS configuration, 302.ai API only
+# FishTTS 配置，仅支持 302.ai API
 fish_tts:
   api_key: 'YOUR_302_API_KEY'
   character: 'AD学姐'
@@ -103,15 +103,15 @@ fish_tts:
     'AD学姐': '7f92f8afb8ec43bf81429cc1c9199cb1'
     '丁真': '54a5170264694bfc8e9ad98df7bd89c3'
 
-# SiliconFlow CosyVoice2 Clone
+# SiliconFlow CosyVoice2 克隆
 sf_cosyvoice2:
   api_key: 'YOUR_SF_KEY'
 
-# Edge TTS configuration
+# Edge TTS 配置
 edge_tts:
   voice: 'zh-CN-XiaoxiaoNeural'
 
-# SoVITS configuration
+# SoVITS 配置
 gpt_sovits:
   character: 'Huanyuv2'
   refer_mode: 3
@@ -119,27 +119,26 @@ gpt_sovits:
 f5tts:
   302_api: 'YOUR_302_API_KEY'
 
-# *Audio speed range
+# * 音频速度范围
 speed_factor:
   min: 1
-  accept: 1.2 # Maximum acceptable speed
+  accept: 1.2 # 可接受的最大速度
   max: 1.4
 
-# *Merge audio configuration
-min_subtitle_duration: 2.5 # Minimum subtitle duration, will be forcibly extended
-min_trim_duration: 3.5 # Subtitles shorter than this value won't be split
-tolerance: 1.5 # Allowed extension time to the next subtitle
+# * 音频合并配置
+min_subtitle_duration: 2.5 # 最小字幕时长，会被强制延长
+min_trim_duration: 3.5 # 短于此值的字幕不会被分割
+tolerance: 1.5 # 允许向后一条字幕延长的时间
 
 
 
 
+## ======================== 附加设置 ======================== ##
 
-## ======================== Additional settings ======================== ##
-
-# Whisper model directory
+# Whisper 模型目录
 model_dir: './_model_cache'
 
-# Supported upload video formats
+# 支持的上传视频格式
 allowed_video_formats:
 - 'mp4'
 - 'mov'
@@ -155,7 +154,7 @@ allowed_audio_formats:
 - 'flac'
 - 'm4a'
 
-# Spacy models
+# Spacy 模型
 spacy_model_map:
   en: 'en_core_web_md'
   ru: 'ru_core_news_md'
@@ -166,7 +165,7 @@ spacy_model_map:
   it: 'it_core_news_md'
   zh: 'zh_core_web_md'
 
-# Languages that use space as separator
+# 使用空格作为分隔符的语言
 language_split_with_space:
 - 'en'
 - 'es'
@@ -175,7 +174,7 @@ language_split_with_space:
 - 'it'
 - 'ru'
 
-# Languages that do not use space as separator
+# 不使用空格作为分隔符的语言
 language_split_without_space:
 - 'zh'
 - 'ja'
