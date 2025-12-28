@@ -1,6 +1,6 @@
 from pathlib import Path
 import edge_tts
-from core.utils import *
+from core.utils import load_key
 import subprocess
 
 # Available voices can be listed using edge-tts --list-voices command

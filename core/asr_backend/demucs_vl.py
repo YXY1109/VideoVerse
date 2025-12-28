@@ -9,7 +9,7 @@ from typing import Optional
 from demucs.api import Separator
 from demucs.apply import BagOfModels
 import gc
-from core.utils.models import *
+from core.utils.models import _VOCAL_AUDIO_FILE, _BACKGROUND_AUDIO_FILE, _AUDIO_DIR, _RAW_AUDIO_FILE
 
 class PreloadedSeparator(Separator):
     def __init__(self, model: BagOfModels, shifts: int = 1, overlap: float = 0.25,

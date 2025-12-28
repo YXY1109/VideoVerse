@@ -2,7 +2,7 @@ import os
 import string
 import warnings
 from core.spacy_utils.load_nlp_model import init_nlp, SPLIT_BY_CONNECTOR_FILE
-from core.utils import *
+from core.utils import load_key, get_joiner, rprint
 from core.utils.models import _3_1_SPLIT_BY_NLP
 
 warnings.filterwarnings("ignore", category=FutureWarning)

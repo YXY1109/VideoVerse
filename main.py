@@ -1,22 +1,48 @@
 import os
 import sys
-import warnings
+import logging
 
-# 设置环境变量和抑制警告（必须在其他导入之前）
+# ===== 第一步：完全禁用 Streamlit 所有警告和日志（必须在任何导入之前） =====
+# 禁用所有 streamlit 相关的日志输出
+logging.getLogger("streamlit").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.runtime").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.runtime.scriptrunner").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.runtime.scriptrunner_utils").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.runtime.caching").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.runtime.metrics").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.components").setLevel(logging.CRITICAL)
+logging.getLogger("streamlit.components.components_manager").setLevel(logging.CRITICAL)
+
+# 设置根日志级别为 ERROR，避免所有 WARNING 级别的输出
+logging.basicConfig(level=logging.ERROR, force=True)
+
+# ===== 第二步：设置环境变量抑制警告 =====
 os.environ['TORCHAUDIO_USE_BACKEND_DISPATCHER'] = '1'
-os.environ['PYTHONWARNIGNORE'] = '1'
+os.environ['PYTHONWARNINGS'] = 'ignore'
+os.environ['STREAMLIT_LOG_LEVEL'] = 'error'
 
-# 抑制特定的 FutureWarning 和 UserWarning
-warnings.filterwarnings('ignore', category=FutureWarning, module='torch.cuda')
-warnings.filterwarnings('ignore', category=UserWarning, module='importlib')
-warnings.filterwarnings('ignore', category=UserWarning, module='openunmix')
+# ===== 第三步：抑制 warnings 模块 =====
+import warnings
+warnings.filterwarnings('ignore')
+
+# 抑制所有类型的警告
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+warnings.filterwarnings('ignore', message='.*ScriptRunContext.*')
+warnings.filterwarnings('ignore', message='.*component manifest.*')
 warnings.filterwarnings('ignore', message='.*TorchAudio.*')
 warnings.filterwarnings('ignore', message='.*Torchaudio.*')
-warnings.filterwarnings('ignore', message='.*ScriptRunContext.*')
+warnings.filterwarnings('ignore', message='.*enableCORS.*')
+warnings.filterwarnings('ignore', message='.*enableXsrfProtection.*')
 
-import streamlit as st
-from core.st_utils.imports_and_utils import *
-from core import *
+from core.st_utils.imports_and_utils import download_subtitle_zip_button, give_star_button, button_style
+from core import (load_key, cleanup, delete_dubbing_files,
+                  _1_ytdlp, _2_asr, _3_1_split_nlp, _3_2_split_meaning,
+                  _4_1_summarize, _4_2_translate, _5_split_sub, _6_gen_sub,
+                  _7_sub_into_vid, _8_1_audio_task, _8_2_dub_chunks,
+                  _9_refer_audio, _10_gen_audio, _11_merge_audio, _12_dub_to_vid)
 
 # SET PATH
 current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -4,8 +4,8 @@ import subprocess
 from pydub import AudioSegment
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.console import Console
-from core.utils import *
-from core.utils.models import *
+from core.utils import rprint
+from core.utils.models import _AUDIO_SEGS_DIR, _8_1_AUDIO_TASK
 console = Console()
 
 DUB_VOCAL_FILE = 'output/dub.mp3'

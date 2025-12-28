@@ -1,5 +1,5 @@
 import json
-from core.utils import *
+from core.utils import load_key
 
 ## ================================================================
 # @ step4_splitbymeaning.py

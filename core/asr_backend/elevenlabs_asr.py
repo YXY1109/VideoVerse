@@ -6,7 +6,7 @@ import tempfile
 import librosa
 import soundfile as sf
 from rich import print as rprint
-from core.utils import *
+from core.utils import load_key, update_key, rprint
 
 # ----------------------------------------
 # ISO 639-2 to 1

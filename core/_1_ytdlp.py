@@ -2,7 +2,7 @@ import os,sys
 import glob
 import re
 import subprocess
-from core.utils import *
+from core.utils import load_key, rprint
 
 def sanitize_filename(filename):
     # Remove or replace illegal characters

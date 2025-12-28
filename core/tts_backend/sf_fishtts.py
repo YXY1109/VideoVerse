@@ -10,8 +10,8 @@ from rich.panel import Panel
 from rich.text import Text
 from core._1_ytdlp import find_video_files
 from core.asr_backend.audio_preprocess import get_audio_duration
-from core.utils import *
-from core.utils.models import *
+from core.utils import except_handler, load_key, update_key, rprint
+from core.utils.models import _AUDIO_REFERS_DIR
 
 API_URL_SPEECH = "https://api.siliconflow.cn/v1/audio/speech"
 API_URL_VOICE = "https://api.siliconflow.cn/v1/uploads/audio/voice"

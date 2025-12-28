@@ -4,7 +4,7 @@ import os, sys
 import subprocess
 import socket
 import time
-from core.utils import *
+from core.utils import load_key, rprint
 
 def check_lang(text_lang, prompt_lang):
     # only support zh and en

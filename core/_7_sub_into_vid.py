@@ -3,7 +3,7 @@ from core._1_ytdlp import find_video_files
 import cv2
 import numpy as np
 import platform
-from core.utils import *
+from core.utils import load_key, rprint
 
 SRC_FONT_SIZE = 15
 TRANS_FONT_SIZE = 17

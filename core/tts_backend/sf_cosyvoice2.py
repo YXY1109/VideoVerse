@@ -1,7 +1,7 @@
 from openai import OpenAI
 from pathlib import Path
 import base64
-from core.utils import *
+from core.utils import except_handler, load_key
 
 def wav_to_base64(wav_file_path):
     with open(wav_file_path, 'rb') as audio_file:

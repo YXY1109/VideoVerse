@@ -3,7 +3,7 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
 from rich import box
-from core.utils import *
+from core.utils import ask_gpt, load_key
 console = Console()
 
 def valid_translate_result(result: dict, required_keys: list, required_sub_keys: list):

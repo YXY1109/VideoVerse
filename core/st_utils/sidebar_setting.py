@@ -1,7 +1,7 @@
 import streamlit as st
 from translations.translations import translate as t
 from translations.translations import DISPLAY_LANGUAGES
-from core.utils import *
+from core.utils import load_key, update_key, ask_gpt
 
 def config_input(label, key, help=None):
     """Generic config input handler"""

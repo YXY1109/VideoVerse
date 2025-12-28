@@ -5,7 +5,7 @@ description = "Videoverse - AI-powered video translation and dubbing tool"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "av==15.1.0",
+    "av>=13.0.0",
     "librosa==0.10.2.post1",
     "pytorch-lightning==2.3.3",
     "lightning==2.3.3",
@@ -53,6 +53,12 @@ torch = { index = "pytorch-cu118" }
 torchvision = { index = "pytorch-cu118" }
 torchaudio = { index = "pytorch-cu118" }
 demucs = { path = "./files/demucs-main" }
+
+[tool.uv]
+override-dependencies = [
+    "av>=13.0.0",
+    "tokenizers>=0.21",
+]
 
 [tool.setuptools.packages.find]
 exclude = ["files*", "output*"]

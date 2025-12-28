@@ -225,15 +225,6 @@ cd VideoVerse
 # 2. 使用 uv 初始化项目（Python 3.10）
 uv init -p 3.10
 uv sync
-
-# 3. 安装 PyTorch（CUDA 11.8 版本）
-uv pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
-
-# 4. 安装 demucs（音频分离）
-uv pip install git+https://github.com/adefossez/demucs.git
-
-# 5. 安装 numpy
-uv pip install numpy==1.26.4
 ```
 
 ### 启动应用

@@ -1,7 +1,7 @@
 import json
 from core.prompts import get_summary_prompt
 import pandas as pd
-from core.utils import *
+from core.utils import load_key, rprint, ask_gpt
 from core.utils.models import _3_2_SPLIT_BY_MEANING, _4_1_TERMINOLOGY
 
 CUSTOM_TERMS_PATH = 'custom_terms.xlsx'

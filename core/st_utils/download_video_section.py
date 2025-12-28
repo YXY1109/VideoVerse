@@ -6,7 +6,7 @@ from time import sleep
 
 import streamlit as st
 from core._1_ytdlp import download_video_ytdlp, find_video_files
-from core.utils import *
+from core.utils import load_key
 from translations.translations import translate as t
 
 OUTPUT_DIR = "output"

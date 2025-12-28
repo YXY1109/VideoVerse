@@ -1,4 +1,4 @@
-from core.spacy_utils import *
+from core.spacy_utils import split_by_mark, split_by_comma_main, split_sentences_main, split_long_by_root_main
 from core.utils.models import _3_1_SPLIT_BY_NLP
 from core.utils import check_file_exists
 

@@ -7,8 +7,8 @@ from core.prompts import get_align_prompt
 from rich.panel import Panel
 from rich.console import Console
 from rich.table import Table
-from core.utils import *
-from core.utils.models import *
+from core.utils import load_key, get_joiner, ask_gpt, except_handler
+from core.utils.models import _4_2_TRANSLATION, _5_SPLIT_SUB, _5_REMERGED
 console = Console()
 
 # ! You can modify your own weights here

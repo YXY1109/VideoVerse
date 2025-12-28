@@ -4,8 +4,8 @@ import pandas as pd
 from core._8_1_audio_task import time_diff_seconds
 from core.asr_backend.audio_preprocess import get_audio_duration
 from core.tts_backend.estimate_duration import init_estimator, estimate_duration
-from core.utils import *
-from core.utils.models import *
+from core.utils import load_key, rprint
+from core.utils.models import _RAW_AUDIO_FILE, _8_1_AUDIO_TASK
 
 SRC_SRT = "output/src.srt"
 TRANS_SRT = "output/trans.srt"

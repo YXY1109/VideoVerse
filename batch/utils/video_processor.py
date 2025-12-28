@@ -1,12 +1,15 @@
 import os
-from core.st_utils.imports_and_utils import *
+from core.st_utils.imports_and_utils import prepare_output_folder
 from core.utils.onekeycleanup import cleanup
 from core.utils import load_key
 import shutil
 from functools import partial
 from rich.panel import Panel
 from rich.console import Console
-from core import *
+from core import (_1_ytdlp, _2_asr, _3_1_split_nlp, _3_2_split_meaning,
+                  _4_1_summarize, _4_2_translate, _5_split_sub, _6_gen_sub,
+                  _7_sub_into_vid, _8_1_audio_task, _8_2_dub_chunks,
+                  _9_refer_audio, _10_gen_audio, _11_merge_audio, _12_dub_to_vid)
 
 console = Console()
 

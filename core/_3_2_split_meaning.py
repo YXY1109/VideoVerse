@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 import math
 from core.prompts import get_split_prompt
 from core.spacy_utils.load_nlp_model import init_nlp
-from core.utils import *
+from core.utils import load_key, get_joiner, ask_gpt, check_file_exists
 from rich.console import Console
 from rich.table import Table
 from core.utils.models import _3_1_SPLIT_BY_NLP, _3_2_SPLIT_BY_MEANING

@@ -5,11 +5,11 @@ from core.translate_lines import translate_lines
 from core._4_1_summarize import search_things_to_note_in_prompt
 from core._8_1_audio_task import check_len_then_trim
 from core._6_gen_sub import align_timestamp
-from core.utils import *
+from core.utils import check_file_exists, load_key
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from difflib import SequenceMatcher
-from core.utils.models import *
+from core.utils.models import _3_2_SPLIT_BY_MEANING, _4_1_TERMINOLOGY, _4_2_TRANSLATION, _2_CLEANED_CHUNKS
 console = Console()
 
 # Function to split text into chunks
