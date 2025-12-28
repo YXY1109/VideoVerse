@@ -5,11 +5,13 @@ import subprocess
 from time import sleep
 
 import streamlit as st
+
 from core._1_ytdlp import download_video_ytdlp, find_video_files
 from core.utils import load_key
 from translations.translations import translate as t
 
 OUTPUT_DIR = "output"
+
 
 def download_video_section():
     st.header(t("a. Download or Upload Video"))
@@ -45,16 +47,17 @@ def download_video_section():
                         download_video_ytdlp(url, resolution=res)
                     st.rerun()
 
-            uploaded_file = st.file_uploader(t("Or upload video"), type=load_key("allowed_video_formats") + load_key("allowed_audio_formats"))
+            uploaded_file = st.file_uploader(t("Or upload video"),
+                                             type=load_key("allowed_video_formats") + load_key("allowed_audio_formats"))
             if uploaded_file:
                 if os.path.exists(OUTPUT_DIR):
                     shutil.rmtree(OUTPUT_DIR)
                 os.makedirs(OUTPUT_DIR, exist_ok=True)
-                
+
                 raw_name = uploaded_file.name.replace(' ', '_')
                 name, ext = os.path.splitext(raw_name)
                 clean_name = re.sub(r'[^\w\-_\.]', '', name) + ext.lower()
-                    
+
                 with open(os.path.join(OUTPUT_DIR, clean_name), "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
@@ -64,11 +67,13 @@ def download_video_section():
             else:
                 return False
 
+
 def convert_audio_to_video(audio_file: str) -> str:
     output_video = os.path.join(OUTPUT_DIR, 'black_screen.mp4')
     if not os.path.exists(output_video):
         print(f"🎵➡️🎬 Converting audio to video with FFmpeg ......")
-        ffmpeg_cmd = ['ffmpeg', '-y', '-f', 'lavfi', '-i', 'color=c=black:s=640x360', '-i', audio_file, '-shortest', '-c:v', 'libx264', '-c:a', 'aac', '-pix_fmt', 'yuv420p', output_video]
+        ffmpeg_cmd = ['ffmpeg', '-y', '-f', 'lavfi', '-i', 'color=c=black:s=640x360', '-i', audio_file, '-shortest',
+                      '-c:v', 'libx264', '-c:a', 'aac', '-pix_fmt', 'yuv420p', output_video]
         subprocess.run(ffmpeg_cmd, check=True, capture_output=True, text=True, encoding='utf-8')
         print(f"🎵➡️🎬 Converted <{audio_file}> to <{output_video}> with FFmpeg\n")
         # delete audio file

@@ -1,13 +1,16 @@
-import syllables
-from pypinyin import pinyin, Style
-from g2p_en import G2p
-from typing import Optional
 import re
+from typing import Optional
+
+import syllables
+from g2p_en import G2p
+from pypinyin import pinyin, Style
+
 
 class AdvancedSyllableEstimator:
     def __init__(self):
         self.g2p_en = G2p()
-        self.duration_params = {'en': 0.225, 'zh': 0.21, 'ja': 0.21, 'fr': 0.22, 'es': 0.22, 'ko': 0.21, 'default': 0.22}
+        self.duration_params = {'en': 0.225, 'zh': 0.21, 'ja': 0.21, 'fr': 0.22, 'es': 0.22, 'ko': 0.21,
+                                'default': 0.22}
         self.lang_patterns = {
             'zh': r'[\u4e00-\u9fff]', 'ja': r'[\u3040-\u309f\u30a0-\u30ff]',
             'fr': r'[àâçéèêëîïôùûüÿœæ]', 'es': r'[áéíóúñ¿¡]', 'en': r'[a-zA-Z]+', 'ko': r'[\uac00-\ud7af\u1100-\u11ff]'}
@@ -24,12 +27,12 @@ class AdvancedSyllableEstimator:
     def count_syllables(self, text: str, lang: Optional[str] = None) -> int:
         if not text.strip(): return 0
         lang = lang or self._detect_language(text)
-        
+
         vowels_map = {
             'fr': 'aeiouyàâéèêëîïôùûüÿœæ',
             'es': 'aeiouáéíóúü'
         }
-        
+
         if lang == 'en':
             return self._count_english_syllables(text)
         elif lang == 'zh':
@@ -70,18 +73,19 @@ class AdvancedSyllableEstimator:
                 'spaces': [],
                 'estimated_duration': 0
             }
-            
+
         result = {'language_breakdown': {}, 'total_syllables': 0, 'punctuation': [], 'spaces': []}
         segments = re.split(f"({self.punctuation['space']}|{self.punctuation['mid']}|{self.punctuation['end']})", text)
         total_duration = 0
-        
+
         for i, segment in enumerate(segments):
             if not segment: continue
-            
+
             if re.match(self.punctuation['space'], segment):
-                prev_lang = self._detect_language(segments[i-1]) if i > 0 else None
-                next_lang = self._detect_language(segments[i+1]) if i < len(segments)-1 else None
-                if prev_lang and next_lang and (self.lang_joiners[prev_lang] == '' or self.lang_joiners[next_lang] == ''):
+                prev_lang = self._detect_language(segments[i - 1]) if i > 0 else None
+                next_lang = self._detect_language(segments[i + 1]) if i < len(segments) - 1 else None
+                if prev_lang and next_lang and (
+                        self.lang_joiners[prev_lang] == '' or self.lang_joiners[next_lang] == ''):
                     result['spaces'].append(segment)
                     total_duration += self.punctuation['pause']['space']
             elif re.match(f"{self.punctuation['mid']}|{self.punctuation['end']}", segment):
@@ -94,22 +98,26 @@ class AdvancedSyllableEstimator:
                     if lang not in result['language_breakdown']:
                         result['language_breakdown'][lang] = {'syllables': 0, 'text': ''}
                     result['language_breakdown'][lang]['syllables'] += syllables
-                    result['language_breakdown'][lang]['text'] += (self.lang_joiners[lang] + segment 
-                        if result['language_breakdown'][lang]['text'] else segment)
+                    result['language_breakdown'][lang]['text'] += (self.lang_joiners[lang] + segment
+                                                                   if result['language_breakdown'][lang][
+                        'text'] else segment)
                     result['total_syllables'] += syllables
                     total_duration += syllables * self.duration_params.get(lang, self.duration_params['default'])
-        
+
         result['estimated_duration'] = total_duration
-        
+
         return result
-    
+
+
 def init_estimator():
     return AdvancedSyllableEstimator()
+
 
 def estimate_duration(text: str, estimator: AdvancedSyllableEstimator):
     if not text or not isinstance(text, str):
         return 0
     return estimator.process_mixed_text(text)['estimated_duration']
+
 
 # 使用示例
 if __name__ == "__main__":
@@ -126,7 +134,7 @@ if __name__ == "__main__":
         # "I couldn't help but notice the vibrant colors of the autumn leaves cascading gently from the trees"
         "가을 나뭇잎이 부드럽게 떨어지는 생생한 색깔을 주목하지 않을 수 없었다"
     ]
-    
+
     for text in test_cases:
         result = estimator.process_mixed_text(text)
         print(f"\nText: {text}")

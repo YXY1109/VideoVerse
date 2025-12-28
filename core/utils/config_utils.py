@@ -1,11 +1,13 @@
-from ruamel.yaml import YAML
 import threading
+
+from ruamel.yaml import YAML
 
 CONFIG_PATH = 'config.yaml'
 lock = threading.Lock()
 
 yaml = YAML()
 yaml.preserve_quotes = True
+
 
 # -----------------------
 # load & update config
@@ -24,6 +26,7 @@ def load_key(key):
         else:
             raise KeyError(f"Key '{k}' not found in configuration")
     return value
+
 
 def update_key(key, new_value):
     with lock:
@@ -45,7 +48,8 @@ def update_key(key, new_value):
             return True
         else:
             raise KeyError(f"Key '{keys[-1]}' not found in configuration")
-        
+
+
 # basic utils
 def get_joiner(language):
     if language in load_key('language_split_with_space'):
@@ -54,6 +58,7 @@ def get_joiner(language):
         return ""
     else:
         raise ValueError(f"Unsupported language code: {language}")
+
 
 if __name__ == "__main__":
     print(load_key('language_split_with_space'))

@@ -1,9 +1,11 @@
 import os
 import warnings
+
 from core.spacy_utils.load_nlp_model import init_nlp, SPLIT_BY_COMMA_FILE, SPLIT_BY_CONNECTOR_FILE
 from core.utils import rprint
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 def analyze_connectors(doc, token):
     """
@@ -42,7 +44,7 @@ def analyze_connectors(doc, token):
         verb_pos = "VERB"
         noun_pos = ["NOUN", "PROPN"]
     elif lang == "ru":
-        connectors = ["что", "который", "где", "когда", "потому что", "но", "и", "или"] 
+        connectors = ["что", "который", "где", "когда", "потому что", "но", "и", "или"]
         mark_dep = "mark"
         det_pron_deps = ["det"]
         verb_pos = "VERB"
@@ -67,10 +69,10 @@ def analyze_connectors(doc, token):
         noun_pos = ["NOUN", "PROPN"]
     else:
         return False, False
-    
+
     if token.text.lower() not in connectors:
         return False, False
-    
+
     if lang == "en" and token.text.lower() == "that":
         if token.dep_ == mark_dep and token.head.pos_ == verb_pos:
             return True, False
@@ -81,60 +83,63 @@ def analyze_connectors(doc, token):
     else:
         return True, False
 
+
 def split_by_connectors(text, context_words=5, nlp=None):
     doc = nlp(text)
     sentences = [doc.text]  # init
-    
+
     while True:
         # Handle each task with a single cut
         # avoiding the fragmentation of a sentence into multiple parts at the same time.
         split_occurred = False
         new_sentences = []
-        
+
         for sent in sentences:
             doc = nlp(sent)
             start = 0
-            
+
             for i, token in enumerate(doc):
                 split_before, _ = analyze_connectors(doc, token)
-                
+
                 if i + 1 < len(doc) and doc[i + 1].text in ["'s", "'re", "'ve", "'ll", "'d"]:
                     continue
-                
+
                 left_words = doc[max(0, token.i - context_words):token.i]
-                right_words = doc[token.i+1:min(len(doc), token.i + context_words + 1)]
-                
+                right_words = doc[token.i + 1:min(len(doc), token.i + context_words + 1)]
+
                 left_words = [word.text for word in left_words if not word.is_punct]
                 right_words = [word.text for word in right_words if not word.is_punct]
-                
+
                 if len(left_words) >= context_words and len(right_words) >= context_words and split_before:
-                    rprint(f"[yellow]✂️  Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}[/yellow]")
+                    rprint(
+                        f"[yellow]✂️  Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}[/yellow]")
                     new_sentences.append(doc[start:token.i].text.strip())
                     start = token.i
                     split_occurred = True
                     break
-            
+
             if start < len(doc):
                 new_sentences.append(doc[start:].text.strip())
-        
+
         if not split_occurred:
             break
-        
+
         sentences = new_sentences
-    
+
     return sentences
+
 
 def split_sentences_main(nlp):
     # Read input sentences
     with open(SPLIT_BY_COMMA_FILE, "r", encoding="utf-8") as input_file:
         sentences = input_file.readlines()
-    
+
     all_split_sentences = []
     # Process each input sentence
     for sentence in sentences:
-        split_sentences = split_by_connectors(sentence.strip(), nlp = nlp)
+        split_sentences = split_by_connectors(sentence.strip(), nlp=nlp)
         all_split_sentences.extend(split_sentences)
-    
+
     with open(SPLIT_BY_CONNECTOR_FILE, "w+", encoding="utf-8") as output_file:
         for sentence in all_split_sentences:
             output_file.write(sentence + "\n")
@@ -144,8 +149,9 @@ def split_sentences_main(nlp):
 
     # delete the original file
     os.remove(SPLIT_BY_COMMA_FILE)
-    
+
     rprint(f"[green]💾 Sentences split by connectors saved to →  `{SPLIT_BY_CONNECTOR_FILE}`[/green]")
+
 
 if __name__ == "__main__":
     nlp = init_nlp()

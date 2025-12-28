@@ -1,10 +1,14 @@
-from pathlib import Path
-import requests
-import os, sys
-import subprocess
+import os
 import socket
+import subprocess
+import sys
 import time
+from pathlib import Path
+
+import requests
+
 from core.utils import load_key, rprint
+
 
 def check_lang(text_lang, prompt_lang):
     # only support zh and en
@@ -14,7 +18,7 @@ def check_lang(text_lang, prompt_lang):
         text_lang = 'en'
     else:
         raise ValueError("Unsupported text language. Only Chinese and English are supported.")
-    
+
     if any(lang in prompt_lang.lower() for lang in ['en', 'english', '英文', '英语']):
         prompt_lang = 'en'
     elif any(lang in prompt_lang.lower() for lang in ['zh', 'cn', '中文', 'chinese']):
@@ -28,7 +32,7 @@ def gpt_sovits_tts(text, text_lang, save_path, ref_audio_path, prompt_lang, prom
     text_lang, prompt_lang = check_lang(text_lang, prompt_lang)
 
     current_dir = Path.cwd()
-    
+
     payload = {
         'text': text,
         'text_lang': text_lang,
@@ -53,6 +57,7 @@ def gpt_sovits_tts(text, text_lang, save_path, ref_audio_path, prompt_lang, prom
         rprint(f"[bold red]TTS request failed, status code:[/bold red] {response.status_code}")
         return False
 
+
 def gpt_sovits_tts_for_videolingo(text, save_as, number, task_df):
     start_gpt_sovits_server()
     TARGET_LANGUAGE = load_key("target_language")
@@ -71,22 +76,24 @@ def gpt_sovits_tts_for_videolingo(text, save_as, number, task_df):
         config_dir = config_path.parent
 
         # Find reference audio file
-        ref_audio_files = list(config_dir.glob(f"{DUBBING_CHARACTER}_*.wav")) + list(config_dir.glob(f"{DUBBING_CHARACTER}_*.mp3"))
+        ref_audio_files = list(config_dir.glob(f"{DUBBING_CHARACTER}_*.wav")) + list(
+            config_dir.glob(f"{DUBBING_CHARACTER}_*.mp3"))
         if not ref_audio_files:
             raise FileNotFoundError(f"No reference audio file found for {DUBBING_CHARACTER}")
         ref_audio_path = ref_audio_files[0]
 
         # Extract content from filename
         content = ref_audio_path.stem.split('_', 1)[1]
-        
-        #! Check. Only support zh and en.
+
+        # ! Check. Only support zh and en.
         prompt_lang = 'zh' if any('\u4e00' <= char <= '\u9fff' for char in content) else 'en'
-        
+
         print(f"Detected language: {prompt_lang}")
         prompt_text = content
     elif REFER_MODE in [2, 3]:
         # Check if the reference audio file exists
-        ref_audio_path = current_dir / ("output/audio/refers/1.wav" if REFER_MODE == 2 else f"output/audio/refers/{number}.wav")
+        ref_audio_path = current_dir / (
+            "output/audio/refers/1.wav" if REFER_MODE == 2 else f"output/audio/refers/{number}.wav")
         if not ref_audio_path.exists():
             # If the file does not exist, try to extract the reference audio
             try:
@@ -116,11 +123,12 @@ def find_and_check_config_path(dubbing_character):
     if gpt_sovits_dir is None:
         raise FileNotFoundError("GPT-SoVITS-v2 directory not found in the parent directory.")
 
-    config_path = gpt_sovits_dir / "GPT_SoVITS" / "configs" / f"{dubbing_character}.yaml"   
+    config_path = gpt_sovits_dir / "GPT_SoVITS" / "configs" / f"{dubbing_character}.yaml"
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found at {config_path}")
 
     return gpt_sovits_dir, config_path
+
 
 def start_gpt_sovits_server():
     current_dir = Path(__file__).resolve().parent.parent.parent
@@ -134,14 +142,14 @@ def start_gpt_sovits_server():
 
     rprint("[bold yellow]🚀 Initializing GPT-SoVITS Server...[/bold yellow]")
     rprint("[bold yellow]🚀 正在初始化 GPT-SoVITS 服务器...[/bold yellow]")
-    
+
     rprint("""[bold red]⏳ Please wait approximately 1 minute
   • A new command prompt will appear for the GPT-SoVITS API
   • Any `404 not found` warnings during startup are normal, please be patient[/bold red]""")
     rprint("""[bold red]⏳ 请等待大约1分钟
   • GPT-SoVITS API 将会打开一个新的命令提示符窗口
   • 启动过程中出现 `404 not found` 警告是正常的，请耐心等待[/bold red]""")
-    
+
     # Find and check config path
     gpt_sovits_dir, config_path = find_and_check_config_path(load_key("gpt_sovits.character"))
 
@@ -186,4 +194,5 @@ def start_gpt_sovits_server():
         except requests.exceptions.RequestException:
             pass
 
-    raise Exception("GPT-SoVITS server failed to start within 50 seconds. Please check if GPT-SoVITS-v2-xxx folder is set correctly.")
+    raise Exception(
+        "GPT-SoVITS server failed to start within 50 seconds. Please check if GPT-SoVITS-v2-xxx folder is set correctly.")
