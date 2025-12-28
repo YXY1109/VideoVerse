@@ -28,7 +28,7 @@ whisper:
   # ["large-v3", "large-v3-turbo"]。注意：中文模型会强制使用 Belle/large-v3
   model: 'large-v3'
   # Whisper 指定识别语言，ISO 639-1 代码
-  language: 'en'
+  language: 'zh'
   detected_language: 'en'
   # Whisper 运行模式 ["local", "cloud", "elevenlabs"]。指定运行位置，cloud 使用 302.ai API
   runtime: 'local'

@@ -1,5 +1,20 @@
+import os
+import sys
+import warnings
+
+# 设置环境变量和抑制警告（必须在其他导入之前）
+os.environ['TORCHAUDIO_USE_BACKEND_DISPATCHER'] = '1'
+os.environ['PYTHONWARNIGNORE'] = '1'
+
+# 抑制特定的 FutureWarning 和 UserWarning
+warnings.filterwarnings('ignore', category=FutureWarning, module='torch.cuda')
+warnings.filterwarnings('ignore', category=UserWarning, module='importlib')
+warnings.filterwarnings('ignore', category=UserWarning, module='openunmix')
+warnings.filterwarnings('ignore', message='.*TorchAudio.*')
+warnings.filterwarnings('ignore', message='.*Torchaudio.*')
+warnings.filterwarnings('ignore', message='.*ScriptRunContext.*')
+
 import streamlit as st
-import os, sys
 from core.st_utils.imports_and_utils import *
 from core import *
 
@@ -8,7 +23,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 os.environ['PATH'] += os.pathsep + current_dir
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-st.set_page_config(page_title="VideoLingo", page_icon="docs/logo.svg")
+st.set_page_config(page_title="VideoLingo", page_icon="files/logo.svg")
 
 SUB_VIDEO = "output/output_sub.mp4"
 DUB_VIDEO = "output/output_dub.mp4"
@@ -108,7 +123,7 @@ def process_audio():
 def main():
     logo_col, _ = st.columns([1,1])
     with logo_col:
-        st.image("docs/logo.png", use_column_width=True)
+        st.image("files/logo.png")
     st.markdown(button_style, unsafe_allow_html=True)
     welcome_text = t("Hello, welcome to VideoLingo. If you encounter any issues, feel free to get instant answers with our Free QA Agent <a href=\"https://share.fastgpt.in/chat/share?shareId=066w11n3r9aq6879r4z0v9rh\" target=\"_blank\">here</a>! You can also try out our SaaS website at <a href=\"https://videolingo.io\" target=\"_blank\">videolingo.io</a> for free!")
     st.markdown(f"<p style='font-size: 20px; color: #808080;'>{welcome_text}</p>", unsafe_allow_html=True)
@@ -121,4 +136,15 @@ def main():
     audio_processing_section()
 
 if __name__ == "__main__":
-    main()
+    import subprocess
+    import sys
+    import os
+
+    # 用环境变量防止重复启动
+    if os.environ.get("__STREAMLIT_RUNNING__") != "1":
+        os.environ["__STREAMLIT_RUNNING__"] = "1"
+        # 重新启动当前进程，让环境变量生效
+        streamlit_cmd = [sys.executable, "-m", "streamlit", "run", __file__] + sys.argv[1:]
+        subprocess.run(streamlit_cmd)
+    else:
+        main()

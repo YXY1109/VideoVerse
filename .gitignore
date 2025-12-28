@@ -217,3 +217,5 @@ __marimo__/
 
 .idea
 .claude
+/_model_cache/
+/output/
