@@ -6,7 +6,7 @@ import streamlit as st
 
 from core.st_utils.download_video_section import download_video_section
 from core.st_utils.sidebar_setting import page_setting
-from translations import translations as t
+from translations.translations import translate as t
 
 # ===== 第一步：完全禁用 Streamlit 所有警告和日志（必须在任何导入之前） =====
 # 禁用所有 streamlit 相关的日志输出
