@@ -14,7 +14,7 @@ def valid_translate_result(result: dict, required_keys: list, required_sub_keys:
     if not all(key in result for key in required_keys):
         return {"status": "error",
                 "message": f"Missing required key(s): {', '.join(set(required_keys) - set(result.keys()))}"}
-    
+
     # Check for required sub-keys in all items
     for key in result:
         if not all(sub_key in result[key] for sub_key in required_sub_keys):
