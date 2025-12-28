@@ -1,8 +1,12 @@
-import os, subprocess, time
-from core._1_ytdlp import find_video_files
+import os
+import platform
+import subprocess
+import time
+
 import cv2
 import numpy as np
-import platform
+
+from core._1_ytdlp import find_video_files
 from core.utils import load_key, rprint
 
 SRC_FONT_SIZE = 15
@@ -25,14 +29,15 @@ SRC_OUTLINE_WIDTH = 1
 SRC_SHADOW_COLOR = '&H80000000'
 TRANS_FONT_COLOR = '&H00FFFF'
 TRANS_OUTLINE_COLOR = '&H000000'
-TRANS_OUTLINE_WIDTH = 1 
+TRANS_OUTLINE_WIDTH = 1
 TRANS_BACK_COLOR = '&H33000000'
 
 OUTPUT_DIR = "output"
 OUTPUT_VIDEO = f"{OUTPUT_DIR}/output_sub.mp4"
 SRC_SRT = f"{OUTPUT_DIR}/src.srt"
 TRANS_SRT = f"{OUTPUT_DIR}/trans.srt"
-    
+
+
 def check_gpu_available():
     try:
         result = subprocess.run(['ffmpeg', '-encoders'], capture_output=True, text=True)
@@ -40,13 +45,15 @@ def check_gpu_available():
     except:
         return False
 
+
 def merge_subtitles_to_video():
     video_file = find_video_files()
     os.makedirs(os.path.dirname(OUTPUT_VIDEO), exist_ok=True)
 
     # Check resolution
     if not load_key("burn_subtitles"):
-        rprint("[bold yellow]Warning: A 0-second black video will be generated as a placeholder as subtitles are not burned in.[/bold yellow]")
+        rprint(
+            "[bold yellow]Warning: A 0-second black video will be generated as a placeholder as subtitles are not burned in.[/bold yellow]")
 
         # Create a black frame
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -72,7 +79,7 @@ def merge_subtitles_to_video():
         '-vf', (
             f"scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=decrease,"
             f"pad={TARGET_WIDTH}:{TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
-            f"subtitles={SRC_SRT}:force_style='FontSize={SRC_FONT_SIZE},FontName={FONT_NAME}," 
+            f"subtitles={SRC_SRT}:force_style='FontSize={SRC_FONT_SIZE},FontName={FONT_NAME},"
             f"PrimaryColour={SRC_FONT_COLOR},OutlineColour={SRC_OUTLINE_COLOR},OutlineWidth={SRC_OUTLINE_WIDTH},"
             f"ShadowColour={SRC_SHADOW_COLOR},BorderStyle=1',"
             f"subtitles={TRANS_SRT}:force_style='FontSize={TRANS_FONT_SIZE},FontName={TRANS_FONT_NAME},"
@@ -101,6 +108,7 @@ def merge_subtitles_to_video():
         rprint(f"\n❌ Error occurred: {e}")
         if process.poll() is None:
             process.kill()
+
 
 if __name__ == "__main__":
     merge_subtitles_to_video()

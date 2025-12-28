@@ -1,8 +1,11 @@
-import os,sys
 import glob
+import os
 import re
 import subprocess
+import sys
+
 from core.utils import load_key, rprint
+
 
 def sanitize_filename(filename):
     # Remove or replace illegal characters
@@ -11,6 +14,7 @@ def sanitize_filename(filename):
     filename = filename.strip('. ')
     # Use default name if filename is empty
     return filename if filename else 'video'
+
 
 def update_ytdlp():
     try:
@@ -22,6 +26,7 @@ def update_ytdlp():
         rprint("[yellow]Warning: Failed to update yt-dlp: {e}[/yellow]")
     from yt_dlp import YoutubeDL
     return YoutubeDL
+
 
 def download_video_ytdlp(url, save_path='output', resolution='1080'):
     os.makedirs(save_path, exist_ok=True)
@@ -42,7 +47,7 @@ def download_video_ytdlp(url, save_path='output', resolution='1080'):
     YoutubeDL = update_ytdlp()
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
-    
+
     # Check and rename files after download
     for file in os.listdir(save_path):
         if os.path.isfile(os.path.join(save_path, file)):
@@ -51,8 +56,10 @@ def download_video_ytdlp(url, save_path='output', resolution='1080'):
             if new_filename != filename:
                 os.rename(os.path.join(save_path, file), os.path.join(save_path, new_filename + ext))
 
+
 def find_video_files(save_path='output'):
-    video_files = [file for file in glob.glob(save_path + "/*") if os.path.splitext(file)[1][1:].lower() in load_key("allowed_video_formats")]
+    video_files = [file for file in glob.glob(save_path + "/*") if
+                   os.path.splitext(file)[1][1:].lower() in load_key("allowed_video_formats")]
     # change \\ to /, this happen on windows
     if sys.platform.startswith('win'):
         video_files = [file.replace("\\", "/") for file in video_files]
@@ -60,6 +67,7 @@ def find_video_files(save_path='output'):
     if len(video_files) != 1:
         raise ValueError(f"Number of videos found {len(video_files)} is not unique. Please check.")
     return video_files[0]
+
 
 if __name__ == '__main__':
     # Example usage

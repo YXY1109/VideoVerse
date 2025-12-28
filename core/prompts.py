@@ -1,9 +1,11 @@
 import json
+
 from core.utils import load_key
+
 
 ## ================================================================
 # @ step4_splitbymeaning.py
-def get_split_prompt(sentence, num_parts = 2, word_limit = 20):
+def get_split_prompt(sentence, num_parts=2, word_limit=20):
     language = load_key("whisper.detected_language")
     split_prompt = f"""
 ## Role
@@ -43,17 +45,19 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 """.strip()
     return split_prompt
 
+
 """{{
     "analysis": "Brief analysis of the text structure",
     "split": "Complete sentence with [br] tags at split positions"
 }}"""
+
 
 ## ================================================================
 # @ step4_1_summarize.py
 def get_summary_prompt(source_content, custom_terms_json=None):
     src_lang = load_key("whisper.detected_language")
     tgt_lang = load_key("target_language")
-    
+
     # add custom terms note
     terms_note = ""
     if custom_terms_json:
@@ -61,7 +65,7 @@ def get_summary_prompt(source_content, custom_terms_json=None):
         for term in custom_terms_json['terms']:
             terms_list.append(f"- {term['src']}: {term['tgt']} ({term['note']})")
         terms_note = "\n### Existing Terms\nPlease exclude these terms in your extraction:\n" + "\n".join(terms_list)
-    
+
     summary_prompt = f"""
 ## Role
 You are a video translation expert and terminology consultant, specializing in {src_lang} comprehension and {tgt_lang} expression optimization.
@@ -123,6 +127,7 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 """.strip()
     return summary_prompt
 
+
 ## ================================================================
 # @ step5_translate.py & translate_lines.py
 def generate_shared_prompt(previous_content_prompt, after_content_prompt, summary_prompt, things_to_note_prompt):
@@ -141,11 +146,12 @@ def generate_shared_prompt(previous_content_prompt, after_content_prompt, summar
 ### Points to Note
 {things_to_note_prompt}'''
 
+
 def get_prompt_faithfulness(lines, shared_prompt):
     TARGET_LANGUAGE = load_key("target_language")
     # Split lines by \n
     line_splits = lines.split('\n')
-    
+
     json_dict = {}
     for i, line in enumerate(line_splits, 1):
         json_dict[f"{i}"] = {"origin": line, "direct": f"direct {TARGET_LANGUAGE} translation {i}."}
@@ -258,8 +264,8 @@ def get_align_prompt(src_sub, tr_sub, src_part):
     align_parts_json = ','.join(
         f'''
         {{
-            "src_part_{i+1}": "{src_splits[i]}",
-            "target_part_{i+1}": "Corresponding aligned {targ_lang} subtitle part"
+            "src_part_{i + 1}": "{src_splits[i]}",
+            "target_part_{i + 1}": "Corresponding aligned {targ_lang} subtitle part"
         }}''' for i in range(num_parts)
     )
 
@@ -297,10 +303,10 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 '''.strip()
     return align_prompt
 
+
 ## ================================================================
 # @ step8_gen_audio_task.py @ step10_gen_audio.py
 def get_subtitle_trim_prompt(text, duration):
- 
     rule = '''Consider a. Reducing filler words without modifying meaningful content. b. Omitting unnecessary modifiers or pronouns, for example:
     - "Please explain your thought process" can be shortened to "Please explain thought process"
     - "We need to carefully analyze this complex problem" can be shortened to "We need to analyze this problem"
@@ -337,6 +343,7 @@ Please follow these steps and provide the results in the JSON output:
 Note: Start you answer with ```json and end with ```, do not add any other text.
 '''.strip()
     return trim_prompt
+
 
 ## ================================================================
 # @ tts_main

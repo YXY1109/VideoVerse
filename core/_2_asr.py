@@ -1,8 +1,10 @@
-from core.utils import check_file_exists, load_key, rprint
-from core.asr_backend.demucs_vl import demucs_audio
-from core.asr_backend.audio_preprocess import process_transcription, convert_video_to_audio, split_audio, save_results, normalize_audio_volume
 from core._1_ytdlp import find_video_files
+from core.asr_backend.audio_preprocess import process_transcription, convert_video_to_audio, split_audio, save_results, \
+    normalize_audio_volume
+from core.asr_backend.demucs_vl import demucs_audio
+from core.utils import check_file_exists, load_key, rprint
 from core.utils.models import _2_CLEANED_CHUNKS, _VOCAL_AUDIO_FILE, _RAW_AUDIO_FILE
+
 
 @check_file_exists(_2_CLEANED_CHUNKS)
 def transcribe():
@@ -19,7 +21,7 @@ def transcribe():
 
     # 3. Extract audio
     segments = split_audio(_RAW_AUDIO_FILE)
-    
+
     # 4. Transcribe audio by clips
     all_results = []
     runtime = load_key("whisper.runtime")
@@ -36,15 +38,16 @@ def transcribe():
     for start, end in segments:
         result = ts(_RAW_AUDIO_FILE, vocal_audio, start, end)
         all_results.append(result)
-    
+
     # 5. Combine results
     combined_result = {'segments': []}
     for result in all_results:
         combined_result['segments'].extend(result['segments'])
-    
+
     # 6. Process df
     df = process_transcription(combined_result)
     save_results(df)
-        
+
+
 if __name__ == "__main__":
     transcribe()
