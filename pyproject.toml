@@ -1,7 +1,7 @@
 [project]
-name = "VideoLingo"
-version = "3.0.0"
-description = "VideoLingo - AI-powered video translation and dubbing tool"
+name = "videoverse"
+version = "0.1.0"
+description = "Videoverse - AI-powered video translation and dubbing tool"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
