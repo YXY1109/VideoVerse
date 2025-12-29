@@ -41,6 +41,7 @@ dependencies = [
     "torchvision==0.16.2",
     "torchaudio==2.1.2",
     "demucs",
+    "en-core-web-md",
 ]
 
 [[tool.uv.index]]
@@ -53,11 +54,12 @@ torch = { index = "pytorch-cu118" }
 torchvision = { index = "pytorch-cu118" }
 torchaudio = { index = "pytorch-cu118" }
 demucs = { path = "./files/demucs-main" }
+en-core-web-md = { path = "./files/en_core_web_md-3.7.1-py3-none-any.whl" }
 
 [tool.uv]
 override-dependencies = [
     "av>=13.0.0",
-    "tokenizers>=0.21",
+    "tokenizers>=0.21,<0.22",
 ]
 
 [tool.setuptools.packages.find]

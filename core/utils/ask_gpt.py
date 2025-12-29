@@ -67,10 +67,14 @@ def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
 
     messages = [{"role": "user", "content": prompt}]
 
+    # Get max_tokens from config, set a high default for long translations
+    max_tokens = load_key("api.max_tokens", default=8192)
+
     params = dict(
         model=model,
         messages=messages,
         response_format=response_format,
+        max_tokens=max_tokens,
         timeout=300
     )
     resp_raw = client.chat.completions.create(**params)
