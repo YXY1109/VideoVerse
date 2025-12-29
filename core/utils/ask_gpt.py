@@ -53,7 +53,7 @@ def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
     # check cache
     cached = _load_cache(prompt, resp_type, log_title)
     if cached:
-        rprint("use cache response")
+        print("use cache response")
         return cached
 
     model = load_key("api.model")
@@ -98,7 +98,5 @@ def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
 
 
 if __name__ == '__main__':
-    from rich import print as rprint
-
     result = ask_gpt("""test respond ```json\n{\"code\": 200, \"message\": \"success\"}\n```""", resp_type="json")
-    rprint(f"Test json output result: {result}")
+    print(f"Test json output result: {result}")

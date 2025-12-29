@@ -82,6 +82,11 @@ def get_sentence_timestamps(df_words, df_sentences):
         clean_sentence = remove_punctuation(sentence.lower()).replace(" ", "")
         sentence_len = len(clean_sentence)
 
+        # Skip empty sentences to avoid KeyError: -1
+        if sentence_len == 0:
+            print(f"\n⚠️ Warning: Skipping empty sentence: {sentence}")
+            continue
+
         match_found = False
         while current_pos <= len(full_words_str) - sentence_len:
             if full_words_str[current_pos:current_pos + sentence_len] == clean_sentence:
