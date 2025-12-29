@@ -44,7 +44,7 @@ def translate_lines(lines, previous_content_prompt, after_cotent_prompt, things_
             elif step_name == 'expressiveness':
                 result = ask_gpt(prompt + retry * " ", resp_type='json', valid_def=valid_express,
                                  log_title=f'translate_{step_name}')
-            if len(lines.split('\n')) == len(result):
+            if length == len(result):
                 return result
             if retry != 2:
                 console.print(
