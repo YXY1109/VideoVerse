@@ -9,10 +9,10 @@
 
 display_language: "zh-CN"
 
-# API 设置
+# API 设置（敏感信息请通过 .env 文件配置，优先级高于此处）
 api:
-  key: ''
-  base_url: 'https://api.chatanywhere.tech/v1'
+  key: ''  # 通过环境变量 OPENAI_API_KEY 配置
+  base_url: 'https://api.openai.com/v1'  # 通过环境变量 OPENAI_API_BASE 配置
   model: 'deepseek-v3.2'
   llm_support_json: true
   # * LLM 输出最大 token 数，用于长文本翻译
@@ -34,10 +34,10 @@ whisper:
   detected_language: 'en'
   # Whisper 运行模式 ["local", "cloud", "elevenlabs"]。指定运行位置，cloud 使用 302.ai API
   runtime: 'local'
-  # 302.ai API 密钥
-  whisperX_302_api_key: 'your_302_api_key'
-  # ElevenLabs API 密钥（实验性）
-  elevenlabs_api_key: 'your_elevenlabs_api_key'
+  # 302.ai API 密钥（通过环境变量 WHISPERX_302_API_KEY 配置）
+  whisperX_302_api_key: ''
+  # ElevenLabs API 密钥（通过环境变量 ELEVENLABS_API_KEY 配置）
+  elevenlabs_api_key: ''
 
 # 是否将字幕烧录到视频中
 burn_subtitles: true
@@ -77,8 +77,8 @@ tts_method: 'azure_tts'
 
 # SiliconFlow FishTTS
 sf_fish_tts:
-  # SiliconFlow API 密钥
-  api_key: 'YOUR_API_KEY'
+  # SiliconFlow API 密钥（通过环境变量 SF_FISH_TTS_API_KEY 配置）
+  api_key: ''
   # 仅用于 mode "preset"
   voice: 'anna'
   # * 仅用于 mode "custom"，请勿手动设置
@@ -89,17 +89,17 @@ sf_fish_tts:
 
 # OpenAI TTS-1 API 配置，仅支持 302.ai API
 openai_tts:
-  api_key: 'YOUR_302_API_KEY'
+  api_key: ''  # 通过环境变量 OPENAI_TTS_API_KEY 配置
   voice: 'alloy'
 
 # Azure 配置，仅支持 302.ai API
 azure_tts:
-  api_key: 'YOUR_302_API_KEY'
+  api_key: ''  # 通过环境变量 AZURE_TTS_API_KEY 配置
   voice: 'zh-CN-YunfengNeural'
 
 # FishTTS 配置，仅支持 302.ai API
 fish_tts:
-  api_key: 'YOUR_302_API_KEY'
+  api_key: ''  # 通过环境变量 FISH_TTS_API_KEY 配置
   character: 'AD学姐'
   character_id_dict:
     'AD学姐': '7f92f8afb8ec43bf81429cc1c9199cb1'
@@ -107,7 +107,7 @@ fish_tts:
 
 # SiliconFlow CosyVoice2 克隆
 sf_cosyvoice2:
-  api_key: 'YOUR_SF_KEY'
+  api_key: ''  # 通过环境变量 SF_COSYVOICE2_API_KEY 配置
 
 # Edge TTS 配置
 edge_tts:
@@ -119,7 +119,7 @@ gpt_sovits:
   refer_mode: 3
 
 f5tts:
-  302_api: 'YOUR_302_API_KEY'
+  302_api: ''  # 通过环境变量 F5TTS_302_API_KEY 配置
 
 # * 音频速度范围
 speed_factor:
