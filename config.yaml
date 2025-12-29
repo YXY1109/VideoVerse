@@ -13,10 +13,10 @@ display_language: "zh-CN"
 api:
   key: ''  # 通过环境变量 OPENAI_API_KEY 配置
   base_url: 'https://api.openai.com/v1'  # 通过环境变量 OPENAI_API_BASE 配置
-  model: 'deepseek-v3.2'
+  model: 'gpt-4.1'
   llm_support_json: true
   # * LLM 输出最大 token 数，用于长文本翻译
-  max_tokens: 8192
+  max_tokens: 16384
 # * LLM 多线程访问数量，使用本地 LLM 时设为 1
 max_workers: 4
 
@@ -66,7 +66,7 @@ summary_length: 8000
 max_split_length: 20
 
 # * 是否在原文中反映翻译结果
-reflect_translate: true
+reflect_translate: false
 
 # * 提取专业术语后、翻译前是否暂停，允许用户手动调整术语表 output\log\terminology.json
 pause_before_translate: false

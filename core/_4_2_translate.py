@@ -27,13 +27,17 @@ def split_chunks_by_chars(chunk_size, max_i):
     sentence_count = 0
     for sentence in sentences:
         if len(chunk) + len(sentence + '\n') > chunk_size or sentence_count == max_i:
-            chunks.append(chunk.strip())
+            # 只有当 chunk 不为空时才添加，避免添加空字符串
+            if chunk.strip():
+                chunks.append(chunk.strip())
             chunk = sentence + '\n'
             sentence_count = 1
         else:
             chunk += sentence + '\n'
             sentence_count += 1
-    chunks.append(chunk.strip())
+    # 添加最后一个 chunk，同样检查是否为空
+    if chunk.strip():
+        chunks.append(chunk.strip())
     return chunks
 
 
