@@ -94,6 +94,43 @@ def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -
     return segments
 
 
+def fix_mojibake_text(text: str) -> str:
+    """
+    修复 faster-whisper 输出的乱码中文文本
+    尝试常见的编码错误修复
+    """
+    if not text:
+        return text
+
+    # 已经包含中文，直接返回
+    if any('\u4e00' <= c <= '\u9fff' for c in text):
+        return text
+
+    # 尝试多种编码修复方式
+    encoding_attempts = [
+        # (编码方式, 解码方式)
+        ('latin-1', 'utf-8'),
+        ('iso-8859-1', 'utf-8'),
+        ('cp1252', 'utf-8'),
+        ('gbk', 'utf-8'),
+        ('gb2312', 'utf-8'),
+        ('big5', 'utf-8'),
+    ]
+
+    for encode_from, decode_to in encoding_attempts:
+        try:
+            fixed = text.encode(encode_from).decode(decode_to)
+            # 验证修复后的文本是否包含合理的中文
+            if any('\u4e00' <= c <= '\u9fff' for c in fixed):
+                rprint(f"[green]✓ Fixed encoding using {encode_from} -> {decode_to}[/green]")
+                return fixed
+        except (UnicodeEncodeError, UnicodeDecodeError, AttributeError):
+            continue
+
+    # 如果都失败了，返回原始文本
+    return text
+
+
 def process_transcription(result: Dict) -> pd.DataFrame:
     all_words = []
     for segment in result['segments']:
@@ -101,6 +138,8 @@ def process_transcription(result: Dict) -> pd.DataFrame:
         speaker_id = segment.get('speaker_id', None)
 
         for word in segment['words']:
+            # 修复 faster-whisper 的编码问题
+            word["word"] = fix_mojibake_text(word["word"])
             # Check word length
             if len(word["word"]) > 30:
                 rprint(

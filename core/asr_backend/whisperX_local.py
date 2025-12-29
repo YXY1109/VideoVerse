@@ -118,7 +118,23 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     torch.cuda.empty_cache()
     del model_a
 
-    # Adjust timestamps
+    # Fix encoding for Chinese text (faster-whisper bug)
+    def fix_text_encoding(text: str) -> str:
+        """修复 faster-whisper 输出的乱码中文"""
+        if not text or any('\u4e00' <= c <= '\u9fff' for c in text):
+            return text
+
+        # 尝试常见的编码修复
+        for enc in ['latin-1', 'iso-8859-1', 'cp1252', 'gbk', 'gb2312']:
+            try:
+                fixed = text.encode(enc).decode('utf-8')
+                if any('\u4e00' <= c <= '\u9fff' for c in fixed):
+                    return fixed
+            except:
+                continue
+        return text
+
+    # Adjust timestamps and fix encoding
     for segment in result['segments']:
         segment['start'] += start
         segment['end'] += start
@@ -127,4 +143,7 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
                 word['start'] += start
             if 'end' in word:
                 word['end'] += start
+            # 修复单词文本的编码问题
+            if 'word' in word:
+                word['word'] = fix_text_encoding(word['word'])
     return result
