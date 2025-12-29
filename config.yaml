@@ -13,7 +13,7 @@ display_language: "zh-CN"
 api:
   key: ''  # 通过环境变量 OPENAI_API_KEY 配置
   base_url: 'https://api.openai.com/v1'  # 通过环境变量 OPENAI_API_BASE 配置
-  model: 'gpt-4.1'
+  model: 'gpt-4.1-mini'
   llm_support_json: true
   # * LLM 输出最大 token 数，用于长文本翻译
   max_tokens: 16384
@@ -180,3 +180,7 @@ language_split_with_space:
 language_split_without_space:
 - 'zh'
 - 'ja'
+
+# 中文 NLP 设置
+# 中文停用词文件路径（用于 jieba 分割）
+chinese_stopwords_file: 'files/chinese_stopwords.txt'
