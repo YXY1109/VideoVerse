@@ -2,105 +2,162 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 项目概述
 
-VideoLingo is an AI-powered video translation, localization, and dubbing tool that generates Netflix-quality single-line subtitles. It processes videos through a 12-step pipeline from YouTube download through transcription, translation, subtitle generation, and final dubbing.
+**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，fork 自 [VideoLingo](https://github.com/Huanshere/VideoLingo)。它实现了一个 12 步的 AI 处理流水线，用于自动化视频翻译和配音，生成 Netflix 级别的高质量单行字幕。
 
-## Development Setup
+## 核心架构
 
-```bash
-# Environment setup (requires Python 3.10)
-conda create -n videolingo python=3.10.0 -y
-conda activate videolingo
-python install.py
+### 12 步处理流水线
 
-# Run Streamlit UI
-streamlit run st.py
+项目采用模块化流水线架构，每一步独立运行，通过中间文件传递数据：
 
-# Docker (requires CUDA 12.4 and NVIDIA Driver >550)
-docker build -t videolingo .
-docker run -d -p 8501:8501 --gpus all videolingo
+```
+core/_1_ytdlp.py          # ① YouTube 视频下载
+core/_2_asr.py            # ② WhisperX 词级 ASR + 时间轴对齐
+core/_3_1_split_nlp.py    # ③ NLP 句子分割 (Spacy)
+core/_3_2_split_meaning.py # ④ AI 语义分割
+core/_4_1_summarize.py    # ⑤ 内容摘要 + 术语提取
+core/_4_2_translate.py    # ⑥ 多步翻译 (直译 → 反思 → 意译)
+core/_5_split_sub.py      # ⑦ 字幕长度优化 (最长 75 字符)
+core/_6_gen_sub.py        # ⑧ 时间轴对齐
+core/_7_sub_into_vid.py   # ⑨ 字幕烧录
+core/_8_1_audio_task.py   # ⑩ 音频任务生成
+core/_10_gen_audio.py     # ⑪ TTS 音频生成
+core/_11_merge_audio.py   # ⑫ 音频合并
+core/_12_dub_to_vid.py    # ⑫ 最终配音合成
 ```
 
-## 12-Step Pipeline Architecture
+### 架构设计模式
 
-The core pipeline is implemented in `core/` with numbered modules (`_1_ytdlp.py` through `_12_dub_to_vid.py`):
+- **管道模式**: 每步独立处理，通过 `output/log/` 中的文件通信
+- **策略模式**: ASR (`core/asr_backend/`) 和 TTS (`core/tts_backend/`) 支持多种后端
+- **装饰器模式**: `core/utils/decorator.py` 中的 `@check_file_exists` 实现断点续传
+- **配置驱动**: 所有设置集中在 `config.yaml`
 
-**Video & Audio Processing (Steps 1-2):**
-1. `_1_ytdlp.py` - YouTube video download via yt-dlp
-2. `_2_asr.py` - WhisperX word-level transcription (supports local/cloud/elevenlabs backends)
+### 模块组织
 
-**Text Processing (Steps 3-7):**
-3. `_3_1_split_nlp.py` - Spacy-based NLP sentence splitting
-4. `_3_2_split_meaning.py` - LLM-based semantic sentence splitting
-5. `_4_1_summarize.py` - Content summarization for translation context
-6. `_4_2_translate.py` - Multi-step translation (Translate-Reflect-Adaptation pattern)
-7. `_5_split_sub.py` - Subtitle length optimization
-8. `_6_gen_sub.py` - Timeline alignment for single-line subtitles
-9. `_7_sub_into_vid.py` - Subtitle burning into video
+```
+core/
+├── asr_backend/          # ASR 后端: whisperX_local, whisperX_302, elevenlabs_asr
+├── tts_backend/          # TTS 后端: azure, openai, fish, gpt_sovits, edge, cosyvoice2, f5tts, custom
+├── spacy_utils/          # NLP 分割工具
+├── st_utils/             # Streamlit UI 组件
+├── utils/
+│   ├── ask_gpt.py        # LLM API 调用 (OpenAI 兼容)
+│   ├── config_utils.py   # 线程安全的 load_key()/update_key()
+│   ├── decorator.py      # @except_handler, @check_file_exists
+│   └── models.py         # 文件路径定义
+├── prompts.py            # AI Prompt 模板
+└── translate_lines.py    # 三步翻译逻辑
+```
 
-**Dubbing Pipeline (Steps 8-12):**
-10. `_8_1_audio_task.py` - Audio task generation
-11. `_8_2_dub_chunks.py` - Audio chunk preparation
-12. `_9_refer_audio.py` - Reference audio extraction
-13. `_10_gen_audio.py` - TTS audio generation
-14. `_11_merge_audio.py` - Audio merging with speed adjustment
-15. `_12_dub_to_vid.py` - Final dubbing to video
+## 常用开发命令
 
-## Configuration System
+### 环境配置
 
-All settings are managed through `config.yaml` using the utility functions in `core/utils/config_utils.py`:
-- `load_key(key)` - Thread-safe YAML config reading (supports dot notation like `'api.key'`)
-- `update_key(key, value)` - Thread-safe YAML config writing
+```bash
+# 使用 uv 安装依赖 (Python 3.10-3.12)
+uv sync
 
-Key configuration sections:
-- `api.*` - LLM API settings (OpenAI-compatible format)
-- `whisper.*` - ASR backend configuration (local/cloud/elevenlabs)
-- `tts_method` - TTS backend selection (azure_tts, openai_tts, gpt_sovits, fish_tts, edge_tts, custom_tts)
-- `target_language` - Translation target (natural language description)
+# PyTorch 使用 CUDA 11.8 索引 (在 pyproject.toml 中配置)
+```
 
-## LLM Integration
+### 运行应用
 
-The `core/utils/ask_gpt.py` module provides:
-- Response caching system (logs stored in `output/gpt_log/`)
-- OpenAI-compatible API client
-- JSON response parsing with `json_repair` for error recovery
-- Exception handling with retry logic via decorator pattern
+```bash
+# Streamlit UI 模式 (主入口)
+streamlit run main.py
 
-Use `ask_gpt(prompt, resp_type="json", log_title="operation_name")` for all LLM calls.
+# 批处理模式
+python batch/utils/batch_processor.py
+# Windows 系统:
+batch\OneKeyBatch.bat
+```
 
-## TTS Backends
+### 配置管理
 
-TTS implementations are in `core/tts_backend/`:
-- Each TTS module exports a `{name}_tts(text, save_path)` function
-- `tts_main.py` orchestrates TTS calls with retry logic and GPT text correction
-- Add new TTS backends by implementing the standard interface and updating `tts_main.py`
+- 所有配置在 `config.yaml`
+- 使用 `core.utils.config_utils` 中的 `load_key("path.to.key")` 和 `update_key("path.to.key", value)`
+- 支持嵌套键: `load_key("api.model")`
+- 配置操作是线程安全的
 
-## NLP Language Support
+## 重要实现说明
 
-Spacy models are configured in `config.yaml` under `spacy_model_map`. Language-specific utilities:
-- `language_split_with_space` - Languages using space as word separator
-- `language_split_without_space` - Languages without space separator (zh, ja)
-- `get_joiner(language)` in `config_utils.py` returns appropriate word joiner
+### 断点续传能力
 
-## Batch Processing
+每个流水线步骤使用 `@check_file_exists(file_path)` 装饰器。如果输出文件已存在，该步骤会被跳过。要重新运行某步骤，删除 `output/log/` 中对应的输出文件。
 
-The batch mode (`batch/` folder) processes multiple videos using `tasks_setting.xlsx`:
-- Columns: Video File, Source Language, Target Language, Dubbing (0/1)
-- Execute via `batch/OneKeyBatch.bat`
-- Failed videos moved to `output/ERROR` with status logged to Excel
+### AI Prompts
 
-## File Structure Conventions
+所有 Prompt 集中在 `core/prompts.py`。遵循现有模式保持一致性。项目使用三步翻译流程：
+1. 直译 (Literal translation)
+2. 反思 (Reflection - 自我修正)
+3. 意译 (Free translation - 润色)
 
-Intermediate files are stored in `output/` with specific naming:
-- `_2_cleaned_chunks.json` - Post-transcription cleaned text
-- `_3_2_split_by_meaning.txt` - Semantically split sentences
-- `_5_split_for_sub.json` - Subtitle-optimized segments
-- `output/log/terminology.json` - AI-extracted terminology (editable if `pause_before_translate: true`)
+### LLM 集成
 
-## Important Constraints
+使用 `core/utils/ask_gpt.py` 进行 OpenAI 兼容的 API 调用。在 `config.yaml` 中配置：
+```yaml
+api:
+  key: 'your-api-key'
+  base_url: 'https://api.openai.com/v1'  # 或兼容端点
+  model: 'gpt-4o'
+  llm_support_json: true
+  max_tokens: 8192
+```
 
-1. **Single-line subtitles only** - Core design principle for Netflix-quality output
-2. **Translation requires strong LLMs** - Weak models may fail JSON parsing requirements
-3. **No multi-speaker dubbing** - WhisperX speaker diarization is not reliable enough
-4. **Main language retention** - Multilingual videos keep only the primary language
+### 添加新的 TTS/ASR 后端
+
+1. 在 `core/tts_backend/` 或 `core/asr_backend/` 中创建新文件
+2. 遵循现有接口模式 (如 `azure_tts.py`, `whisperX_local.py`)
+3. 在 UI 配置中更新 `tts_method` 选项
+
+### 批处理模式
+
+任务在 `batch/tasks_setting.xlsx` 中定义：
+- `Video File`: YouTube URL 或本地文件名
+- `Source Language`: 源语言代码
+- `Target Language`: 自然语言描述
+- `Dubbing`: 0 不配音, 1 配音
+
+失败的任务移至 `output/ERROR/`，状态记录回 Excel。
+
+## 文件路径约定
+
+- 输出文件: `output/` 目录
+- 中间日志: `output/log/`
+- 音频: `output/audio/`
+- 模型缓存: `_model_cache/` (通过 `model_dir` 配置)
+- 参考音频: `output/audio/refers/`
+
+## 依赖
+
+主要依赖 (见 `pyproject.toml`):
+- **Python**: 3.10-3.12
+- **Streamlit**: 1.52.2 (Web UI)
+- **WhisperX**: 3.2.0 (带对齐的 ASR)
+- **Spacy**: 3.7.4 (NLP)
+- **PyTorch**: 2.1.2 with CUDA 11.8
+- **MoviePy**: 1.0.3 (视频编辑)
+- **OpenAI**: 1.55.3 (LLM 客户端)
+
+### 本地依赖
+
+- `files/demucs-main/` - Demucs 人声分离
+- `files/en_core_web_md-3.7.1-py3-none-any.whl` - Spacy 英语模型
+
+## 语言支持
+
+### 输入语言 (8 种)
+英语 (最佳)、俄语、法语、德语、意大利语、西班牙语、日语、中文 (使用增强模型)
+
+### UI 语言 (7 种)
+zh-CN, en, zh-HK, ja, es, ru, fr (通过 `display_language` 配置)
+
+## 代码风格说明
+
+- 使用从项目根目录开始的绝对导入: `from core.utils import load_key`
+- `core/utils/decorator.py` 中的装饰器用于重试和文件检查
+- 配置操作需要线程安全 (使用 `threading.Lock`)
+- `core/prompts.py` 中的 Prompt 使用 load_key() 动态插入语言
