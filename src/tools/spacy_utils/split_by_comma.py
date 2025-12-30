@@ -2,8 +2,9 @@ import itertools
 import os
 import warnings
 
+from loguru import logger
+
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_MARK_FILE
-from src.utils.common import rprint
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -44,7 +45,7 @@ def split_by_comma(text, nlp):
 
             if suitable_for_splitting:
                 sentences.append(doc[start:token.i].text.strip())
-                rprint(f"[yellow]✂️  Split at comma: {doc[start:token.i][-4:]},| {doc[token.i + 1:][:4]}[/yellow]")
+                logger.debug(f"Split at comma: {doc[start:token.i][-4:]},| {doc[token.i + 1:][:4]}")
                 start = token.i + 1
 
     sentences.append(doc[start:].text.strip())
@@ -67,7 +68,7 @@ def split_by_comma_main(nlp):
     # delete the original file
     os.remove(SPLIT_BY_MARK_FILE)
 
-    rprint(f"[green]💾 Sentences split by commas saved to →  `{SPLIT_BY_COMMA_FILE}`[/green]")
+    logger.info(f"Sentences split by commas saved to `{SPLIT_BY_COMMA_FILE}`")
 
 
 if __name__ == "__main__":

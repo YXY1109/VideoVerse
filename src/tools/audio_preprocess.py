@@ -6,7 +6,8 @@ import pandas as pd
 from pydub import AudioSegment
 from pydub.silence import detect_silence
 from pydub.utils import mediainfo
-from rich import print as rprint
+
+from loguru import logger
 
 from src.utils.paths import AUDIO_DIR, RAW_AUDIO_FILE, CLEANED_CHUNKS
 
@@ -21,14 +22,14 @@ def normalize_audio_volume(audio_path, output_path, target_db=-20.0, format="wav
     change_in_dBFS = target_db - audio.dBFS
     normalized_audio = audio.apply_gain(change_in_dBFS)
     normalized_audio.export(output_path, format=format)
-    rprint(f"[green]✅ Audio normalized from {audio.dBFS:.1f}dB to {target_db:.1f}dB[/green]")
+    logger.info(f"Audio normalized from {audio.dBFS:.1f}dB to {target_db:.1f}dB")
     return output_path
 
 
 def convert_video_to_audio(video_file: str):
     os.makedirs(_AUDIO_DIR, exist_ok=True)
     if not os.path.exists(_RAW_AUDIO_FILE):
-        rprint(f"[blue]🎬➡️🎵 Converting to high quality audio with FFmpeg ......[/blue]")
+        logger.info(f"Converting video to audio with FFmpeg: {video_file}")
         subprocess.run([
             'ffmpeg', '-y', '-i', video_file, '-vn',
             '-c:a', 'libmp3lame', '-b:a', '32k',
@@ -36,7 +37,7 @@ def convert_video_to_audio(video_file: str):
             '-ac', '1',
             '-metadata', 'encoding=UTF-8', _RAW_AUDIO_FILE
         ], check=True, stderr=subprocess.PIPE)
-        rprint(f"[green]🎬➡️🎵 Converted <{video_file}> to <{_RAW_AUDIO_FILE}> with FFmpeg\n[/green]")
+        logger.info(f"Converted {video_file} to {_RAW_AUDIO_FILE}")
 
 
 def get_audio_duration(audio_file: str) -> float:
@@ -51,14 +52,14 @@ def get_audio_duration(audio_file: str) -> float:
         duration_parts = duration_str.split('Duration: ')[1].split(',')[0].split(':')
         duration = float(duration_parts[0]) * 3600 + float(duration_parts[1]) * 60 + float(duration_parts[2])
     except Exception as e:
-        print(f"[red]❌ Error: Failed to get audio duration: {e}[/red]")
+        logger.error(f"Failed to get audio duration: {e}")
         duration = 0
     return duration
 
 
 def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -> List[Tuple[float, float]]:
     ## 在 [target_len-win, target_len+win] 区间内用 pydub 检测静默，切分音频
-    rprint(f"[blue]🎙️ Starting audio segmentation {audio_file} {target_len} {win}[/blue]")
+    logger.info(f"Starting audio segmentation: {audio_file} (target: {target_len}s, window: {win}s)")
     audio = AudioSegment.from_file(audio_file)
     duration = float(mediainfo(audio_file)["duration"])
     if duration <= target_len + win:
@@ -87,14 +88,13 @@ def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -
             start, end = valid_regions[0]
             split_at = start + safe_margin  # 在静默区域起始点后0.5秒处切分
         else:
-            rprint(
-                f"[yellow]⚠️ No valid silence regions found for {audio_file} at {threshold}s, using threshold[/yellow]")
+            logger.warning(f"No valid silence regions found for {audio_file} at {threshold}s, using threshold")
             split_at = threshold
 
         segments.append((pos, split_at));
         pos = split_at
 
-    rprint(f"[green]🎙️ Audio split completed {len(segments)} segments[/green]")
+    logger.info(f"Audio split completed: {len(segments)} segments")
     return segments
 
 
@@ -126,7 +126,7 @@ def fix_mojibake_text(text: str) -> str:
             fixed = text.encode(encode_from).decode(decode_to)
             # 验证修复后的文本是否包含合理的中文
             if any('\u4e00' <= c <= '\u9fff' for c in fixed):
-                rprint(f"[green]✓ Fixed encoding using {encode_from} -> {decode_to}[/green]")
+                logger.debug(f"Fixed encoding using {encode_from} -> {decode_to}")
                 return fixed
         except (UnicodeEncodeError, UnicodeDecodeError, AttributeError):
             continue
@@ -146,8 +146,7 @@ def process_transcription(result: Dict) -> pd.DataFrame:
             word["word"] = fix_mojibake_text(word["word"])
             # Check word length
             if len(word["word"]) > 30:
-                rprint(
-                    f"[yellow]⚠️ Warning: Detected word longer than 30 characters, skipping: {word['word']}[/yellow]")
+                logger.warning(f"Detected word longer than 30 characters, skipping: {word['word']}")
                 continue
 
             # ! For French, we need to convert guillemets to empty strings
@@ -198,18 +197,17 @@ def save_results(df: pd.DataFrame):
     df = df[df['text'].str.len() > 0]
     removed_rows = initial_rows - len(df)
     if removed_rows > 0:
-        rprint(f"[blue]ℹ️ Removed {removed_rows} row(s) with empty text.[/blue]")
+        logger.info(f"Removed {removed_rows} row(s) with empty text")
 
     # Check for and remove words longer than 20 characters
     long_words = df[df['text'].str.len() > 30]
     if not long_words.empty:
-        rprint(
-            f"[yellow]⚠️ Warning: Detected {len(long_words)} word(s) longer than 30 characters. These will be removed.[/yellow]")
+        logger.warning(f"Detected {len(long_words)} word(s) longer than 30 characters. These will be removed.")
         df = df[df['text'].str.len() <= 30]
 
     df['text'] = df['text'].apply(lambda x: f'"{x}"')
     df.to_excel(_2_CLEANED_CHUNKS, index=False)
-    rprint(f"[green]📊 Excel file saved to {_2_CLEANED_CHUNKS}[/green]")
+    logger.info(f"Excel file saved to {_2_CLEANED_CHUNKS}")
 
 
 def save_language(language: str):

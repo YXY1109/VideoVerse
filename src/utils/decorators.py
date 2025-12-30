@@ -8,9 +8,8 @@ import functools
 import os
 from pathlib import Path
 from typing import Callable, TypeVar
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 T = TypeVar("T")
 

@@ -1,7 +1,9 @@
 import spacy
 from spacy.cli import download
 
-from src.utils.common import rprint, settings
+from loguru import logger
+
+from src.utils.common import settings
 from src.utils.decorators import async_except_handler
 
 SPACY_MODEL_MAP = settings.spacy_model_map
@@ -10,7 +12,7 @@ SPACY_MODEL_MAP = settings.spacy_model_map
 def get_spacy_model(language: str):
     model = SPACY_MODEL_MAP.get(language.lower(), "en_core_web_md")
     if language not in SPACY_MODEL_MAP:
-        rprint(f"[yellow]Spacy model does not support '{language}', using en_core_web_md model as fallback...[/yellow]")
+        logger.warning(f"Spacy model does not support '{language}', using en_core_web_md model as fallback...")
     return model
 
 
@@ -22,15 +24,15 @@ def init_nlp():
     """
     language = "en" if settings.whisper_language == "en" else settings.whisper_language
     model = get_spacy_model(language)
-    rprint(f"[blue]⏳ Loading NLP Spacy model: <{model}> ...[/blue]")
+    logger.info(f"Loading NLP Spacy model: {model}")
     try:
         nlp = spacy.load(model)
     except:
-        rprint(f"[yellow]Downloading {model} model...[/yellow]")
-        rprint("[yellow]If download failed, please check your network and try again.[/yellow]")
+        logger.warning(f"Downloading {model} model...")
+        logger.warning("If download failed, please check your network and try again.")
         download(model)
         nlp = spacy.load(model)
-    rprint("[green]✅ NLP Spacy model loaded successfully![/green]")
+    logger.info("NLP Spacy model loaded successfully!")
     return nlp
 
 

@@ -21,9 +21,8 @@ from src.utils.paths import (
     CLEANED_CHUNKS,
 )
 from src.utils.decorators import async_check_file_exists
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 
@@ -293,4 +292,4 @@ if __name__ == '__main__':
     import asyncio
     video_path = "output/test_video.mp4"
     result = asyncio.run(step_02_asr(video_path))
-    print(f"ASR result: {result}")
+    logger.info(f"ASR result: {result}")

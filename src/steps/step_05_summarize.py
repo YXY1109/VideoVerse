@@ -11,9 +11,8 @@ from src.config import get_settings
 from src.utils.paths import TERMINOLOGY
 from src.utils.llm import ask_llm
 from src.utils.decorators import async_check_file_exists
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

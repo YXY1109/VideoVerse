@@ -1,14 +1,10 @@
-from rich import box
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+from loguru import logger
 
 from src.tools.prompts import generate_shared_prompt, get_prompt_faithfulness, get_prompt_expressiveness
 from src.utils.llm import ask_llm
 from src.config import get_settings
 
 settings = get_settings()
-console = Console()
 
 # 兼容旧的 ask_gpt 调用
 async def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
@@ -62,10 +58,9 @@ async def translate_lines_async(lines, previous_content_prompt, after_cotent_pro
             if length == len(result):
                 return result
             if retry != 2:
-                console.print(
-                    f'[yellow]⚠️ {step_name.capitalize()} translation of block {index} failed, Retry...[/yellow]')
+                logger.warning(f"{step_name.capitalize()} translation of block {index} failed, retrying...")
         raise ValueError(
-            f'[red]❌ {step_name.capitalize()} translation of block {index} failed after 3 retries.[/red]')
+            f"{step_name.capitalize()} translation of block {index} failed after 3 retries")
 
     ## Step 1: Faithful to the Original Text
     prompt1 = get_prompt_faithfulness(lines, shared_prompt)
@@ -79,37 +74,31 @@ async def translate_lines_async(lines, previous_content_prompt, after_cotent_pro
     if not reflect_translate:
         translate_result = "\n".join([faith_result[i]["direct"].strip() for i in faith_result])
 
-        table = Table(title="Translation Results", show_header=False, box=box.ROUNDED)
-        table.add_column("Translations", style="bold")
+        logger.info("Translation Results (Direct):")
         for i, key in enumerate(faith_result):
-            table.add_row(f"[cyan]Origin:  {faith_result[key]['origin']}[/cyan]")
-            table.add_row(f"[magenta]Direct:  {faith_result[key]['direct']}[/magenta]")
+            logger.info(f"Origin:  {faith_result[key]['origin']}")
+            logger.info(f"Direct:  {faith_result[key]['direct']}")
             if i < len(faith_result) - 1:
-                table.add_row("[yellow]" + "-" * 50 + "[/yellow]")
+                logger.debug("-" * 50)
 
-        console.print(table)
         return translate_result, lines
 
     ## Step 2: Express Smoothly
     prompt2 = get_prompt_expressiveness(faith_result, lines, shared_prompt)
     express_result = await retry_translation(prompt2, len(lines.split('\n')), 'expressiveness')
 
-    table = Table(title="Translation Results", show_header=False, box=box.ROUNDED)
-    table.add_column("Translations", style="bold")
+    logger.info("Translation Results (Reflected):")
     for i, key in enumerate(express_result):
-        table.add_row(f"[cyan]Origin:  {faith_result[key]['origin']}[/cyan]")
-        table.add_row(f"[magenta]Direct:  {faith_result[key]['direct']}[/magenta]")
-        table.add_row(f"[green]Free:    {express_result[key]['free']}[/green]")
+        logger.info(f"Origin:  {faith_result[key]['origin']}")
+        logger.info(f"Direct:  {faith_result[key]['direct']}")
+        logger.info(f"Free:    {express_result[key]['free']}")
         if i < len(express_result) - 1:
-            table.add_row("[yellow]" + "-" * 50 + "[/yellow]")
-
-    console.print(table)
+            logger.debug("-" * 50)
 
     translate_result = "\n".join([express_result[i]["free"].replace('\n', ' ').strip() for i in express_result])
 
     if len(lines.split('\n')) != len(translate_result.split('\n')):
-        console.print(Panel(
-            f'[red]❌ Translation of block {index} failed, Length Mismatch[/red]'))
+        logger.error(f"Translation of block {index} failed, Length Mismatch")
         raise ValueError(f'Origin ···{lines}···,\nbut got ···{translate_result}···')
 
     return translate_result, lines

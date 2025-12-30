@@ -1,8 +1,9 @@
 import os
 import warnings
 
+from loguru import logger
+
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_CONNECTOR_FILE
-from src.utils.common import rprint
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -111,8 +112,7 @@ def split_by_connectors(text, context_words=5, nlp=None):
                 right_words = [word.text for word in right_words if not word.is_punct]
 
                 if len(left_words) >= context_words and len(right_words) >= context_words and split_before:
-                    rprint(
-                        f"[yellow]✂️  Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}[/yellow]")
+                    logger.debug(f"Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}")
                     new_sentences.append(doc[start:token.i].text.strip())
                     start = token.i
                     split_occurred = True
@@ -150,7 +150,7 @@ def split_sentences_main(nlp):
     # delete the original file
     os.remove(SPLIT_BY_COMMA_FILE)
 
-    rprint(f"[green]💾 Sentences split by connectors saved to →  `{SPLIT_BY_CONNECTOR_FILE}`[/green]")
+    logger.info(f"Sentences split by connectors saved to `{SPLIT_BY_CONNECTOR_FILE}`")
 
 
 if __name__ == "__main__":

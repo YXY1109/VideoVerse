@@ -1,10 +1,8 @@
-import logging
-
 import httpx
 
 from src.config import get_settings
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

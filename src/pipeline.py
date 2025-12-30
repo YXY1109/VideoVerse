@@ -4,7 +4,8 @@ VideoVerse 异步流水线
 实现 13 步视频处理流水线
 """
 import asyncio
-import logging
+
+from loguru import logger
 
 from src.config import get_settings
 from src.steps import (
@@ -26,7 +27,6 @@ from src.utils.paths import (
     ensure_directories,
 )
 
-logger = logging.getLogger(__name__)
 settings = get_settings()
 
 

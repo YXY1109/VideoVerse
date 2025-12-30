@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from loguru import logger
+
 from src.config import get_settings
 from src.utils.paths import INPUT_VIDEO_FILE, OUTPUT_DIR
 
@@ -30,9 +32,9 @@ def update_ytdlp() -> None:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"])
         if 'yt_dlp' in sys.modules:
             del sys.modules['yt_dlp']
-        print("yt-dlp updated successfully")
+        logger.info("yt-dlp updated successfully")
     except subprocess.CalledProcessError as e:
-        print(f"Warning: Failed to update yt-dlp: {e}")
+        logger.warning(f"Failed to update yt-dlp: {e}")
 
 
 def download_video_ytdlp_sync(url: str, save_path: str = 'output', resolution: str = '1080') -> str:
@@ -108,7 +110,7 @@ async def download_video(
     Returns:
         下载的视频文件路径
     """
-    print(f"Downloading video from {url} (resolution: {resolution})")
+    logger.info(f"Downloading video from {url} (resolution: {resolution})")
 
     # yt-dlp 不支持异步，使用 asyncio.to_thread 在线程池中运行
     video_path = await asyncio.to_thread(
@@ -118,7 +120,7 @@ async def download_video(
         resolution
     )
 
-    print(f"Video downloaded: {video_path}")
+    logger.info(f"Video downloaded: {video_path}")
     return video_path
 
 
@@ -134,7 +136,7 @@ async def step_01_download(url: str) -> str:
     """
     # 如果是本地文件，直接返回
     if os.path.exists(url) and not url.startswith(('http://', 'https://')):
-        print(f"Using local video file: {url}")
+        logger.info(f"Using local video file: {url}")
         return url
 
     # 如果是 URL，下载视频
@@ -147,4 +149,4 @@ if __name__ == '__main__':
     import asyncio
     url = input('Please enter the URL of the video you want to download: ')
     video_path = asyncio.run(step_01_download(url))
-    print(f"Video downloaded to: {video_path}")
+    logger.info(f"Video downloaded to: {video_path}")

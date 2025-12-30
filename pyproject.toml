@@ -53,6 +53,7 @@ dependencies = [
     "demucs",
     "en-core-web-md",
     "jieba>=0.42.1",
+    "loguru>=0.7.3",
 ]
 
 [[tool.uv.index]]

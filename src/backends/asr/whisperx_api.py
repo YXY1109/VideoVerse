@@ -1,7 +1,6 @@
 import asyncio
 import io
 import json
-import logging
 from typing import Optional
 
 import httpx
@@ -11,7 +10,7 @@ import soundfile as sf
 from src.config import get_settings
 from src.utils.paths import LOG_DIR
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

@@ -14,9 +14,8 @@ from src.config import get_settings
 from src.utils.cache import get_cache_manager
 from src.utils.decorators import async_except_handler
 from src.utils.http import get_global_client
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 settings = get_settings()
 cache_manager = get_cache_manager()

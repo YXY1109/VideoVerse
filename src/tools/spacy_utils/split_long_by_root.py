@@ -2,8 +2,10 @@ import os
 import string
 import warnings
 
+from loguru import logger
+
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_CONNECTOR_FILE
-from src.utils.common import get_joiner, rprint, settings
+from src.utils.common import get_joiner, settings
 from src.utils.paths import SPLIT_BY_NLP
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -75,7 +77,7 @@ def split_long_by_root_main(nlp):
                 split_sentences = [subsent for sent in split_sentences for subsent in
                                    split_extremely_long_sentence(nlp(sent))]
             all_split_sentences.extend(split_sentences)
-            rprint(f"[yellow]✂️  Splitting long sentences by root: {sentence[:30]}...[/yellow]")
+            logger.debug(f"Splitting long sentences by root: {sentence[:30]}...")
         else:
             all_split_sentences.append(sentence.strip())
 
@@ -85,7 +87,7 @@ def split_long_by_root_main(nlp):
         for i, sentence in enumerate(all_split_sentences):
             stripped_sentence = sentence.strip()
             if not stripped_sentence or all(char in punctuation for char in stripped_sentence):
-                rprint(f"[yellow]⚠️  Warning: Empty or punctuation-only line detected at index {i}[/yellow]")
+                logger.warning(f"Empty or punctuation-only line detected at index {i}")
                 if i > 0:
                     all_split_sentences[i - 1] += sentence
                 continue
@@ -94,7 +96,7 @@ def split_long_by_root_main(nlp):
     # delete the original file
     os.remove(SPLIT_BY_CONNECTOR_FILE)
 
-    rprint(f"[green]💾 Long sentences split by root saved to →  {SPLIT_BY_NLP}[/green]")
+    logger.info(f"Long sentences split by root saved to {SPLIT_BY_NLP}")
 
 
 if __name__ == "__main__":

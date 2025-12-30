@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import subprocess
 import time
@@ -10,10 +9,12 @@ import librosa
 import torch
 import whisperx
 
-from src.utils.common import rprint, settings
+from src.config import get_settings
 from src.utils.paths import LOG_DIR
 
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+settings = get_settings()
 
 warnings.filterwarnings("ignore")
 
@@ -24,7 +25,7 @@ def check_hf_mirror():
     mirrors = {'Official': 'huggingface.co', 'Mirror': 'hf-mirror.com'}
     fastest_url = f"https://{mirrors['Official']}"
     best_time = float('inf')
-    rprint("[cyan]🔍 Checking HuggingFace mirrors...[/cyan]")
+    logger.info("Checking HuggingFace mirrors...")
     for name, domain in mirrors.items():
         if os.name == 'nt':
             cmd = ['ping', '-n', '1', '-w', '3000', domain]
@@ -37,10 +38,10 @@ def check_hf_mirror():
             if response_time < best_time:
                 best_time = response_time
                 fastest_url = f"https://{domain}"
-            rprint(f"[green]✓ {name}:[/green] {response_time:.2f}s")
+            logger.info(f"{name}: {response_time:.2f}s")
     if best_time == float('inf'):
-        rprint("[yellow]⚠️ All mirrors failed, using default[/yellow]")
-    rprint(f"[cyan]🚀 Selected mirror:[/cyan] {fastest_url} ({best_time:.2f}s)")
+        logger.warning("All mirrors failed, using default")
+    logger.info(f"Selected mirror: {fastest_url} ({best_time:.2f}s)")
     return fastest_url
 
 
@@ -54,19 +55,18 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     WHISPER_LANGUAGE = settings.whisper_language
     MODEL_DIR = settings.model_cache_dir
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    rprint(f"🚀 Starting WhisperX using device: {device} ...")
+    logger.info(f"Starting WhisperX using device: {device}")
 
     if device == "cuda":
         gpu_mem = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
         batch_size = 16 if gpu_mem > 8 else 2
         compute_type = "float16" if torch.cuda.is_bf16_supported() else "int8"
-        rprint(
-            f"[cyan]🎮 GPU memory:[/cyan] {gpu_mem:.2f} GB, [cyan]📦 Batch size:[/cyan] {batch_size}, [cyan]⚙️ Compute type:[/cyan] {compute_type}")
+        logger.info(f"GPU memory: {gpu_mem:.2f} GB, Batch size: {batch_size}, Compute type: {compute_type}")
     else:
         batch_size = 1
         compute_type = "int8"
-        rprint(f"[cyan]📦 Batch size:[/cyan] {batch_size}, [cyan]⚙️ Compute type:[/cyan] {compute_type}")
-    rprint(f"[green]▶️ Starting WhisperX for segment {start:.2f}s to {end:.2f}s...[/green]")
+        logger.info(f"Batch size: {batch_size}, Compute type: {compute_type}")
+    logger.info(f"Starting WhisperX for segment {start:.2f}s to {end:.2f}s")
 
     if WHISPER_LANGUAGE == 'zh':
         model_name = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper"
@@ -76,16 +76,15 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
         local_model = os.path.join(MODEL_DIR, model_name)
 
     if os.path.exists(local_model):
-        rprint(f"[green]📥 Loading local WHISPER model:[/green] {local_model} ...")
+        logger.info(f"Loading local WHISPER model: {local_model}")
         model_name = local_model
     else:
-        rprint(f"[green]📥 Using WHISPER model from HuggingFace:[/green] {model_name} ...")
+        logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
 
     vad_options = {"vad_onset": 0.500, "vad_offset": 0.363}
     asr_options = {"temperatures": [0], "initial_prompt": "", }
     whisper_language = None if 'auto' in WHISPER_LANGUAGE else WHISPER_LANGUAGE
-    rprint(
-        "[bold yellow] You can ignore warning of `Model was trained with torch 1.10.0+cu102, yours is 2.0.0+cu118...`[/bold yellow]")
+    logger.debug("You can ignore warning of `Model was trained with torch 1.10.0+cu102, yours is 2.0.0+cu118...`")
     model = whisperx.load_model(model_name, device, compute_type=compute_type, language=whisper_language,
                                 vad_options=vad_options, asr_options=asr_options, download_root=MODEL_DIR)
 
@@ -100,10 +99,10 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     # 1. transcribe raw audio
     # -------------------------
     transcribe_start_time = time.time()
-    rprint("[bold green]Note: You will see Progress if working correctly ↓[/bold green]")
+    logger.info("Starting transcribe (you will see progress bar)...")
     result = model.transcribe(raw_audio_segment, batch_size=batch_size, print_progress=True)
     transcribe_time = time.time() - transcribe_start_time
-    rprint(f"[cyan]⏱️ time transcribe:[/cyan] {transcribe_time:.2f}s")
+    logger.info(f"Transcribe time: {transcribe_time:.2f}s")
 
     # Free GPU resources
     del model
@@ -122,7 +121,7 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     result = whisperx.align(result["segments"], model_a, metadata, vocal_audio_segment, device,
                             return_char_alignments=False)
     align_time = time.time() - align_start_time
-    rprint(f"[cyan]⏱️ time align:[/cyan] {align_time:.2f}s")
+    logger.info(f"Align time: {align_time:.2f}s")
 
     # Free GPU resources again
     torch.cuda.empty_cache()

@@ -12,7 +12,8 @@ from typing import List
 
 import jieba
 import pandas as pd
-from rich import print as rprint
+
+from loguru import logger
 
 from src.utils.common import get_joiner, settings
 from src.utils.paths import SPLIT_BY_NLP
@@ -68,7 +69,7 @@ def split_by_mark_jieba():
     """
     language = settings.whisper_language
     joiner = get_joiner(language)
-    rprint(f"[blue]🔍 Using {language} language joiner: '{joiner}'[/blue]")
+    logger.info(f"Using {language} language joiner: '{joiner}'")
 
     chunks = pd.read_excel("output/log/cleaned_chunks.xlsx")
     chunks.text = chunks.text.apply(lambda x: x.strip('"').strip(""))
@@ -118,7 +119,7 @@ def split_by_mark_jieba():
             else:
                 output_file.write(sentence + "\n")
 
-    rprint(f"[green]💾 Sentences split by punctuation marks (jieba) saved to → `{SPLIT_BY_MARK_FILE}`[/green]")
+    logger.info(f"Sentences split by punctuation marks (jieba) saved to `{SPLIT_BY_MARK_FILE}`")
 
 
 # --------------------
@@ -168,7 +169,7 @@ def split_by_comma_jieba_main():
 
             # 只有当左右都有足够词汇时才分割
             if len(left_words) >= 3 and len(right_words) >= 3:
-                rprint(f"[yellow]✂️  Split at comma: {current_part[-4:]}，| {next_part[:4]}[/yellow]")
+                logger.debug(f"Split at comma: {current_part[-4:]}，| {next_part[:4]}")
                 all_split_sentences.append(current_part)
             else:
                 # 合并
@@ -182,7 +183,7 @@ def split_by_comma_jieba_main():
             output_file.write(sentence + "\n")
 
     os.remove(SPLIT_BY_MARK_FILE)
-    rprint(f"[green]💾 Sentences split by commas (jieba) saved to → `{SPLIT_BY_COMMA_FILE}`[/green]")
+    logger.info(f"Sentences split by commas (jieba) saved to `{SPLIT_BY_COMMA_FILE}`")
 
 
 # --------------------
@@ -234,7 +235,7 @@ def split_by_connectors_jieba(text: str, context_words: int = 5) -> List[str]:
 
                     left_show = left_text[-context_words:] if len(left_text) > context_words else left_text
                     right_show = right_text[:context_words] if len(right_text) > context_words else right_text
-                    rprint(f"[yellow]✂️  Split before '{word}': {left_show}| {word}{right_show}[/yellow]")
+                    logger.debug(f"Split before '{word}': {left_show}| {word}{right_show}")
                     new_sentences.append(left_text)
                     new_sentences.append(right_text)
                     split_occurred = True
@@ -270,7 +271,7 @@ def split_sentences_jieba_main():
         output_file.truncate()
 
     os.remove(SPLIT_BY_COMMA_FILE)
-    rprint(f"[green]💾 Sentences split by connectors (jieba) saved to → `{SPLIT_BY_CONNECTOR_FILE}`[/green]")
+    logger.info(f"Sentences split by connectors (jieba) saved to `{SPLIT_BY_CONNECTOR_FILE}`")
 
 
 # --------------------
@@ -344,7 +345,7 @@ def split_long_by_root_jieba_main():
         words = list(jieba.cut(sentence.strip()))
 
         if len(words) > 60:
-            rprint(f"[yellow]✂️  Splitting long sentences: {sentence[:30]}...[/yellow]")
+            logger.debug(f"Splitting long sentences: {sentence[:30]}...")
             split_sentences = split_long_sentence_jieba(sentence.strip())
 
             # 如果还有超长句子，强制平均分割
@@ -364,14 +365,14 @@ def split_long_by_root_jieba_main():
         for i, sentence in enumerate(all_split_sentences):
             stripped_sentence = sentence.strip()
             if not stripped_sentence or all(char in punctuation for char in stripped_sentence):
-                rprint(f"[yellow]⚠️  Warning: Empty or punctuation-only line detected at index {i}[/yellow]")
+                logger.warning(f"Empty or punctuation-only line detected at index {i}")
                 if i > 0:
                     all_split_sentences[i - 1] += sentence
                 continue
             output_file.write(sentence + "\n")
 
     os.remove(SPLIT_BY_CONNECTOR_FILE)
-    rprint(f"[green]💾 Long sentences split by root (jieba) saved to → `{SPLIT_BY_NLP}`[/green]")
+    logger.info(f"Long sentences split by root (jieba) saved to `{SPLIT_BY_NLP}`")
 
 
 # --------------------

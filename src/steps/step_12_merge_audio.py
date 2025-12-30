@@ -9,9 +9,8 @@ from pathlib import Path
 
 from src.config import get_settings
 from src.utils.paths import AUDIO_SEGS_DIR, AUDIO_DIR
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

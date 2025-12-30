@@ -3,8 +3,6 @@ VideoVerse 通用工具函数
 
 提供与旧 core.utils 兼容的接口
 """
-from rich import print as rprint
-
 from src.config import get_settings
 
 settings = get_settings()
@@ -30,4 +28,4 @@ def get_joiner(language: str) -> str:
 
 
 # 导出常用函数
-__all__ = ["rprint", "get_joiner", "settings"]
+__all__ = ["get_joiner", "settings"]

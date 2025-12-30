@@ -9,9 +9,8 @@ from pathlib import Path
 from src.config import get_settings
 from src.utils.paths import TRANSLATION_FOR_SUBTITLES, TRANSLATION_RESULTS
 from src.utils.decorators import async_check_file_exists
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

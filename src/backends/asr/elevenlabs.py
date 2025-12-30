@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import tempfile
 from typing import Optional
@@ -12,7 +11,7 @@ import soundfile as sf
 from src.config import get_settings
 from src.utils.paths import LOG_DIR
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 # ISO 639-2 to ISO 639-1 映射

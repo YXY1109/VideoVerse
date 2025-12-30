@@ -10,9 +10,8 @@ from pathlib import Path
 from src.config import get_settings
 from src.utils.paths import INPUT_VIDEO_FILE, OUTPUT_VIDEO_WITH_SUB
 from src.utils.decorators import async_check_file_exists
-import logging
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 settings = get_settings()
 
 

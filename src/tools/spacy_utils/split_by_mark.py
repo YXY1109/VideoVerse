@@ -2,7 +2,8 @@ import os
 import warnings
 
 import pandas as pd
-from rich import print as rprint
+
+from loguru import logger
 
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_MARK_FILE
 from src.utils.common import get_joiner, settings
@@ -14,7 +15,7 @@ def split_by_mark(nlp):
     whisper_language = settings.whisper_language
     language = whisper_language  # 简化：直接使用设置的语言
     joiner = get_joiner(language)
-    rprint(f"[blue]🔍 Using {language} language joiner: '{joiner}'[/blue]")
+    logger.info(f"Using {language} language joiner: '{joiner}'")
     chunks = pd.read_excel("output/log/cleaned_chunks.xlsx")
     chunks.text = chunks.text.apply(lambda x: x.strip('"').strip(""))
 
@@ -59,7 +60,7 @@ def split_by_mark(nlp):
             else:
                 output_file.write(sentence + "\n")
 
-    rprint(f"[green]💾 Sentences split by punctuation marks saved to →  `{SPLIT_BY_MARK_FILE}`[/green]")
+    logger.info(f"Sentences split by punctuation marks saved to `{SPLIT_BY_MARK_FILE}`")
 
 
 if __name__ == "__main__":
