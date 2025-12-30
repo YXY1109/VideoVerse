@@ -27,7 +27,7 @@ whisper:
   runtime: 'local'
 
   # ASR 自动检测到的语言（运行时由 ASR 后端自动更新，无需手动设置）
-  detected_language: ''
+  detected_language: 'zh'
 
 # 转录前是否使用 Demucs 进行人声分离（推荐用于背景噪音较大的视频）
 demucs: true
