@@ -6,7 +6,9 @@ VideoVerse 路径定义
 from pathlib import Path
 
 # ==================== 目录定义 ====================
-OUTPUT_DIR = Path("output")
+# 获取项目根目录 (src/utils/paths.py -> src/utils -> src -> root)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+OUTPUT_DIR = PROJECT_ROOT / "output"
 AUDIO_DIR = OUTPUT_DIR / "audio"
 LOG_DIR = OUTPUT_DIR / "log"
 GPT_LOG_DIR = OUTPUT_DIR / "gpt_log"
@@ -57,6 +59,7 @@ def ensure_directories() -> None:
 # 导出所有路径常量
 __all__ = [
     # 目录
+    "PROJECT_ROOT",
     "OUTPUT_DIR",
     "AUDIO_DIR",
     "LOG_DIR",
