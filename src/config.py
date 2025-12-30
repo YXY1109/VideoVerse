@@ -4,6 +4,7 @@ VideoVerse 配置管理
 使用 pydantic-settings 从环境变量加载配置
 """
 from typing import List
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

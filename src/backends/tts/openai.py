@@ -1,13 +1,8 @@
-"""
-OpenAI TTS 后端（异步版本）
-
-使用 OpenAI TTS API
-"""
-import asyncio
+import logging
 
 from openai import AsyncOpenAI
+
 from ...config import get_settings
-import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

@@ -91,12 +91,12 @@ def split_by_mark_jieba():
 
         # 检查是否需要合并（处理 ... 和 -）
         if current_sentence and (
-            sent.startswith('-') or
-            sent.startswith('...') or
-            sent.startswith('…') or
-            current_sentence[-1].endswith('-') or
-            current_sentence[-1].endswith('...') or
-            current_sentence[-1].endswith('…')
+                sent.startswith('-') or
+                sent.startswith('...') or
+                sent.startswith('…') or
+                current_sentence[-1].endswith('-') or
+                current_sentence[-1].endswith('...') or
+                current_sentence[-1].endswith('…')
         ):
             current_sentence.append(sent)
         else:
@@ -161,8 +161,10 @@ def split_by_comma_jieba_main():
             next_part = parts[i + 1].strip()
 
             # 计算左右的有效词数
-            left_words = [w for w in jieba.cut(current_part) if w.strip() and w not in string.punctuation and w not in stopwords]
-            right_words = [w for w in jieba.cut(next_part) if w.strip() and w not in string.punctuation and w not in stopwords]
+            left_words = [w for w in jieba.cut(current_part) if
+                          w.strip() and w not in string.punctuation and w not in stopwords]
+            right_words = [w for w in jieba.cut(next_part) if
+                           w.strip() and w not in string.punctuation and w not in stopwords]
 
             # 只有当左右都有足够词汇时才分割
             if len(left_words) >= 3 and len(right_words) >= 3:

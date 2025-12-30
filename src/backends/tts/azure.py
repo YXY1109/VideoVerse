@@ -1,14 +1,9 @@
-"""
-Azure TTS 后端（异步版本）
-
-使用 Azure 认知服务的 TTS API
-"""
 import asyncio
+import logging
 
 import httpx
 
 from ...config import get_settings
-import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

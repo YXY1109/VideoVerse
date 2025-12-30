@@ -1,18 +1,12 @@
-"""
-GPT-SoVITS TTS 后端（异步版本）
-
-使用本地 GPT-SoVITS 服务器
-"""
 import asyncio
+import logging
 
 import httpx
 
 from ...config import get_settings
-import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
-
 
 GPT_SOVITS_HOST = "http://127.0.0.1:9880"
 

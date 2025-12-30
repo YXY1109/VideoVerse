@@ -1,10 +1,6 @@
-"""
-ElevenLabs ASR 后端（异步版本）
-
-使用 ElevenLabs API 进行语音识别
-"""
 import asyncio
 import json
+import logging
 import os
 import tempfile
 from typing import Optional
@@ -15,7 +11,6 @@ import soundfile as sf
 
 from ...config import get_settings
 from ...utils.paths import LOG_DIR
-import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -73,10 +68,10 @@ def elev2whisper(elev_json, word_level_timestamp=False):
 
 
 async def transcribe_audio(
-    raw_audio_path: str,
-    vocal_audio_path: str,
-    start: Optional[float] = None,
-    end: Optional[float] = None,
+        raw_audio_path: str,
+        vocal_audio_path: str,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
 ) -> dict:
     """
     异步转录音频（ElevenLabs API）

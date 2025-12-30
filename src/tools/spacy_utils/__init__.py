@@ -12,6 +12,7 @@ try:
         split_sentences_jieba_main,
         split_long_by_root_jieba_main
     )
+
     JIEBA_AVAILABLE = True
 except ImportError:
     JIEBA_AVAILABLE = False

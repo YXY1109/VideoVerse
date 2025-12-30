@@ -5,6 +5,7 @@
 """
 import hashlib
 from typing import Any, Optional
+
 from aiocache.backends.memory import SimpleMemoryCache
 from aiocache.serializers import PickleSerializer
 

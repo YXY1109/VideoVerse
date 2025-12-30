@@ -4,6 +4,7 @@ VideoVerse 通用工具函数
 提供与旧 core.utils 兼容的接口
 """
 from rich import print as rprint
+
 from ..config import get_settings
 
 settings = get_settings()

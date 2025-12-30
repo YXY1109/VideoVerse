@@ -1,28 +1,22 @@
-"""
-WhisperX 本地模型 ASR 后端（异步版本）
-
-使用本地 WhisperX 模型进行语音识别
-"""
 import asyncio
+import logging
 import os
 import subprocess
 import time
 import warnings
-from pathlib import Path
 from typing import Optional
 
 import librosa
 import torch
 import whisperx
 
-from ...config import get_settings
-from ...utils.paths import LOG_DIR
 from ...utils.common import rprint, settings
-import logging
+from ...utils.paths import LOG_DIR
 
 logger = logging.getLogger(__name__)
 
 warnings.filterwarnings("ignore")
+
 
 # 本地实现函数
 def check_hf_mirror():
@@ -166,10 +160,10 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
 
 
 async def transcribe_audio(
-    raw_audio_path: str,
-    vocal_audio_path: str,
-    start: Optional[float] = None,
-    end: Optional[float] = None,
+        raw_audio_path: str,
+        vocal_audio_path: str,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
 ) -> dict:
     """
     异步转录音频（本地 WhisperX）

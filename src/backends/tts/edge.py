@@ -1,14 +1,9 @@
-"""
-Edge TTS 后端（异步版本）
-
-使用 Microsoft Edge TTS（免费）
-"""
 import asyncio
+import logging
 import subprocess
 from pathlib import Path
 
 from ...config import get_settings
-import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
