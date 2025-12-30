@@ -12,7 +12,7 @@
 
 ## 🌟 项目概述
 
-**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，能够生成 Netflix 级别的高质量单行字幕。通过完整的 12 步 AI 处理流水线，实现从视频下载到最终配音的全自动化处理。
+**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，能够生成 Netflix 级别的高质量单行字幕。通过完整的 13 步异步处理流水线，实现从视频下载到最终配音的全自动化处理。
 
 ### 核心特性
 
@@ -22,16 +22,16 @@
 - 📚 **术语库管理** - AI 自动提取 + 自定义术语，确保翻译一致性
 - 🔄 **三步翻译流程** - 直译 → 反思 → 意译，打造电影级翻译质量
 - ✅ **Netflix 标准** - 严格单行字幕，最长 75 字符
-- 🗣️ **多 TTS 支持** - 9 种配音后端（GPT-SoVITS、Azure、OpenAI 等）
-- 🚀 **Streamlit UI** - 一键启动，支持 7 种界面语言
-- 📦 **批处理模式** - 支持批量处理多个视频
+- 🗣️ **多 TTS 支持** - 5 种配音后端（GPT-SoVITS、Azure、OpenAI、Fish、Edge）
+- ⚡ **异步架构** - 全异步流水线，提供 Python API
+- 🌐 **环境变量配置** - 使用 pydantic-settings 管理配置
 - 🔄 **断点续传** - 详细日志记录，支持从任意步骤恢复
 
 ### 与同类项目的区别
 
-**仅使用单行字幕、卓越的翻译质量、无缝的配音体验、高度模块化的 12 步流水线架构**
+**仅使用单行字幕、卓越的翻译质量、无缝的配音体验、高度模块化的 13 步异步流水线架构**
 
-## 🏗️ 12 步处理流水线
+## 🏗️ 13 步处理流水线
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -48,18 +48,21 @@
 │  └─────────────┘    └─────────────┘    │ + 术语提取   │             │
 │                                        └─────────────┘             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐             │
-│  │ ⑥ 多步翻译   │ →  │ ⑦ 字幕分割   │ →  │ ⑧ 时间轴对齐  │             │
+│  │ ⑥ 多步翻译   │ →  │ ⑦ 字幕分割   │ →  │ ⑧ 字幕生成   │             │
 │  │ (直译-反思-意译)│               │    │             │             │
 │  └─────────────┘    └─────────────┘    └─────────────┘             │
-│                                        ┌─────────────┐             │
-│                                        │ ⑨ 字幕烧录   │ → 带字幕视频  │
-│                                        └─────────────┘             │
+│  ┌─────────────┐                                                       │
+│  │ ⑨ 字幕烧录   │ → 带字幕视频                                         │
+│  └─────────────┘                                                       │
 │                                                                     │
 │  配音处理                                                            │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐             │
-│  │ ⑩ 音频任务   │ →  │ ⑪ TTS生成   │ →  │ ⑫ 音频合成   │ → 配音视频  │
-│  └─────────────┘    │ (9种后端)   │    └─────────────┘             │
+│  │ ⑩ 音频任务   │ →  │ ⑪ TTS生成   │ →  │ ⑫ 音频合并   │             │
+│  └─────────────┘    │ (5种后端)   │    └─────────────┘             │
 │                     └─────────────┘                                 │
+│  ┌─────────────┐                                                       │
+│  │ ⑬ 配音合成   │ → 配音视频                                           │
+│  └─────────────┘                                                       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,51 +70,65 @@
 
 ```
 VideoVerse/
-├── st.py                      # Streamlit 主入口
-├── config.yaml                # 主配置文件
-├── pyproject.toml             # 项目依赖
+├── pyproject.toml              # 项目依赖
+├── .env.example                # 环境变量配置示例
+├── README.md                   # 项目文档
 │
-├── core/                      # 核心处理模块（12步流水线）
-│   ├── _1_ytdlp.py           # ① YouTube 视频下载
-│   ├── _2_asr.py             # ② WhisperX 语音识别
-│   ├── _3_1_split_nlp.py     # ③ NLP 句子分割
-│   ├── _3_2_split_meaning.py # ④ AI 语义分割
-│   ├── _4_1_summarize.py     # ⑤ 内容摘要 + 术语提取
-│   ├── _4_2_translate.py     # ⑥ 多步翻译
-│   ├── _5_split_sub.py       # ⑦ 字幕长度优化
-│   ├── _6_gen_sub.py         # ⑧ 字幕时间轴对齐
-│   ├── _7_sub_into_vid.py    # ⑨ 字幕烧录
-│   ├── _8_1_audio_task.py    # ⑩ 音频任务生成
-│   ├── _10_gen_audio.py      # ⑪ TTS 音频生成
-│   ├── _11_merge_audio.py    # ⑫ 音频合并
-│   ├── _12_dub_to_vid.py     # ⑫ 最终配音合成
+├── src/                        # 核心源代码（异步架构）
+│   ├── config.py              # pydantic-settings 配置管理
+│   ├── api.py                 # Python API (异步/同步)
+│   ├── pipeline.py            # 13 步异步流水线
 │   │
-│   ├── asr_backend/          # ASR 后端（3种）
-│   │   ├── whisperX_local.py    # WhisperX 本地
-│   │   ├── whisperX_302.py      # WhisperX 302.ai
-│   │   └── elevenlabs_asr.py    # ElevenLabs ASR
+│   ├── steps/                 # 处理步骤模块（13步）
+│   │   ├── 01_download.py     # ① YouTube 视频下载
+│   │   ├── 02_asr.py          # ② WhisperX 语音识别
+│   │   ├── 03_nlp_split.py    # ③ NLP 句子分割
+│   │   ├── 04_meaning_split.py # ④ AI 语义分割
+│   │   ├── 05_summarize.py    # ⑤ 内容摘要 + 术语提取
+│   │   ├── 06_translate.py    # ⑥ 多步翻译
+│   │   ├── 07_split_sub.py    # ⑦ 字幕长度优化
+│   │   ├── 08_gen_sub.py      # ⑧ 字幕时间轴对齐
+│   │   ├── 09_burn_sub.py     # ⑨ 字幕烧录
+│   │   ├── 10_audio_task.py   # ⑩ 音频任务生成
+│   │   ├── 11_gen_audio.py    # ⑪ TTS 音频生成
+│   │   ├── 12_merge_audio.py  # ⑫ 音频合并
+│   │   └── 13_dubbing.py      # ⑬ 最终配音合成
 │   │
-│   ├── tts_backend/          # TTS 后端（9种）
-│   │   ├── azure_tts.py          # Azure TTS
-│   │   ├── openai_tts.py         # OpenAI TTS
-│   │   ├── edge_tts.py           # Edge TTS
-│   │   ├── fish_tts.py           # Fish TTS
-│   │   ├── gpt_sovits_tts.py     # GPT-SoVITS
-│   │   ├── sf_cosyvoice2.py      # CosyVoice2
-│   │   └── custom_tts.py         # 自定义 TTS
+│   ├── backends/              # ASR/TTS 后端
+│   │   ├── asr/               # ASR 后端（3种）
+│   │   │   ├── whisperx_local.py   # WhisperX 本地
+│   │   │   ├── whisperx_api.py     # WhisperX API
+│   │   │   └── elevenlabs.py       # ElevenLabs ASR
+│   │   └── tts/               # TTS 后端（5种）
+│   │       ├── azure.py           # Azure TTS
+│   │       ├── openai.py          # OpenAI TTS
+│   │       ├── edge.py            # Edge TTS
+│   │       ├── fish.py            # Fish TTS
+│   │       └── gpt_sovits.py      # GPT-SoVITS
 │   │
-│   ├── spacy_utils/          # NLP 工具
-│   ├── st_utils/             # Streamlit UI 工具
-│   └── utils/                # 核心工具函数
-│       ├── ask_gpt.py        # LLM API 调用
-│       └── config_utils.py   # 配置管理
+│   ├── tools/                 # 工具模块
+│   │   ├── prompts.py         # AI Prompt 模板
+│   │   ├── translate_lines.py # 三步翻译逻辑
+│   │   ├── audio_preprocess.py # 音频预处理
+│   │   └── spacy_utils/       # NLP 工具
+│   │
+│   └── utils/                 # 核心工具函数
+│       ├── http.py            # 异步 HTTP 客户端
+│       ├── llm.py             # LLM API 调用
+│       ├── cache.py           # 异步缓存
+│       ├── decorators.py      # 装饰器
+│       ├── paths.py           # 路径管理
+│       └── common.py          # 通用工具
 │
-├── batch/                     # 批处理模块
-│   ├── OneKeyBatch.bat       # 一键批处理脚本
-│   ├── tasks_setting.xlsx    # 批处理任务配置
-│   └── README.zh.md          # 批处理使用说明
+├── files/                     # 本地依赖
+│   ├── demucs-main/          # Demucs 人声分离
+│   └── *.whl                 # Spacy 模型包
 │
-└── translations/              # 多语言翻译（已弃用）
+└── output/                    # 输出目录
+    ├── log/                   # 日志和中间文件
+    ├── audio/                 # 音频处理
+    ├── output_sub.mp4         # 带字幕的视频
+    └── output_dub.mp4         # 最终配音视频
 ```
 
 ## 🎥 演示
@@ -144,10 +161,6 @@ https://github.com/user-attachments/assets/47d965b2-b4ab-4a0b-9d08-b49a7bf3508c
 
 ## 🌍 语言支持
 
-### UI 界面语言（7种）
-
-🇨🇳 简体中文 | 🇬🇧 英语 | 🇭🇰 繁体中文 | 🇯🇵 日语 | 🇪🇸 西班牙语 | 🇷🇺 俄语 | 🇫🇷 法语
-
 ### 输入语言支持（8种）
 
 🇺🇸 英语 🤩 | 🇷🇺 俄语 😊 | 🇫🇷 法语 🤩 | 🇩🇪 德语 🤩 | 🇮🇹 意大利语 🤩 | 🇪🇸 西班牙语 🤩 | 🇯🇵 日语 😐 | 🇨🇳 中文* 😊
@@ -159,43 +172,45 @@ https://github.com/user-attachments/assets/47d965b2-b4ab-4a0b-9d08-b49a7bf3508c
 ## 🛠️ 技术栈
 
 ### 核心
-- **Python 3.10+** - 基础运行环境
-- **Streamlit 1.52** - Web UI 框架
+- **Python 3.10-3.12** - 基础运行环境
+- **pydantic-settings** - 环境变量配置管理
+- **python-dotenv** - .env 文件加载
+
+### 异步框架
+- **httpx** - 异步 HTTP 客户端
+- **asyncio** - 异步任务编排
+- **aiocache** - 异步缓存
 
 ### AI / ML
-- **WhisperX 3.7** - 词级语音识别与强制对齐
+- **WhisperX 3.2** - 词级语音识别与强制对齐
 - **Spacy 3.7** - NLP 自然语言处理
 - **Transformers 4.48** - HuggingFace 模型支持
-- **PyTorch 2.1** - 深度学习框架
+- **PyTorch 2.1** - 深度学习框架 (CUDA 11.8)
 
 ### 音视频处理
 - **MoviePy 1.0** - 视频编辑
 - **Librosa 0.10** - 音频分析
 - **Pydub 0.25** - 音频处理
 - **OpenCV 4.10** - 图像处理
-- **PyAV 15.1** - 音视频编解码
+- **PyAV 13.0** - 音视频编解码
 - **yt-dlp** - YouTube 视频下载
 
 ### LLM 集成
 - **OpenAI 1.55** - LLM API 客户端（兼容格式）
 - **json-repair** - JSON 响应自动修复
 
-### TTS 后端（9种）
+### TTS 后端（5种）
 
 1. **Azure TTS** - 微软 Azure 文本转语音
 2. **OpenAI TTS** - OpenAI 文本转语音
 3. **Fish TTS** - 开源高质量 TTS
-4. **SiliconFlow FishTTS** - SiliconFlow 托管版本
-5. **GPT-SoVITS** - 声音克隆 TTS
-6. **Edge TTS** - Microsoft Edge 免费TTS
-7. **CosyVoice2** - 阿里开源 TTS
-8. **F5TTS** - 高质量 TTS
-9. **自定义 TTS** - 可扩展接口
+4. **GPT-SoVITS** - 声音克隆 TTS
+5. **Edge TTS** - Microsoft Edge 免费TTS
 
 ### ASR 后端（3种）
 
 1. **WhisperX 本地** - large-v3 模型本地运行
-2. **WhisperX 302.ai** - 云端 API
+2. **WhisperX API** - 云端 API (302.ai)
 3. **ElevenLabs ASR** - 商业 ASR 服务
 
 ## 📦 环境配置
@@ -222,80 +237,100 @@ FFmpeg 是必需的依赖，请通过包管理器安装：
 git clone https://github.com/yourusername/VideoVerse.git
 cd VideoVerse
 
-# 2. 使用 uv 初始化项目（Python 3.10）
-uv init -p 3.10
+# 2. 复制环境变量配置
+cp .env.example .env
+
+# 3. 编辑 .env 填入 API 密钥
+# 至少需要配置 OPENAI_API_KEY
+
+# 4. 使用 uv 安装依赖（Python 3.10）
 uv sync
-```
-
-### 启动应用
-
-```bash
-streamlit run st.py
 ```
 
 ## ⚙️ 配置说明
 
-主要配置文件为 `config.yaml`，关键配置项：
+项目使用环境变量配置，主要配置项在 `.env` 文件中：
 
-```yaml
-# LLM API 配置
-api:
-  key: "your-api-key"
-  base_url: "https://api.openai.com/v1"
-  model: "gpt-4.1"
+### 快速配置
 
-# 翻译目标语言（自然语言描述）
-target_language: "中文（简体）"
+```bash
+# 最小配置 - 仅需 LLM API
+OPENAI_API_KEY=your-api-key-here
+OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o
 
-# WhisperX 设置
-whisper:
-  model: "large-v3"        # 模型选择
-  language: "auto"         # 识别语言
-  runtime: "local"         # local/302/elevenlabs
+# 选择 TTS 方法（推荐免费方案）
+TTS_METHOD=edge
+EDGE_TTS_VOICE=zh-CN-XiaoxiaoNeural
 
-# 字幕设置
-subtitle:
-  max_length: 75           # 每行最大字符数
-  target_multiplier: 1.2   # 目标语言长度倍数
-
-# 配音设置
-tts_method: "azure_tts"    # TTS 方法选择
-speed_factor:              # 音频速度范围 [1.0, 1.4]
+# 选择 ASR 方法
+WHISPER_RUNTIME=local
+WHISPER_MODEL=large-v3
 ```
 
-完整配置说明请参考 [config.yaml](./config.yaml) 文件。
+### 完整配置说明
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `OPENAI_API_KEY` | LLM API 密钥 | - |
+| `OPENAI_API_BASE` | LLM API 端点 | `https://api.openai.com/v1` |
+| `OPENAI_MODEL` | LLM 模型名称 | `gpt-4o` |
+| `TARGET_LANGUAGE` | 目标语言代码 | `en` |
+| `WHISPER_RUNTIME` | ASR 运行模式 (`local`/`api`) | `local` |
+| `WHISPER_MODEL` | Whisper 模型 | `large-v3` |
+| `TTS_METHOD` | TTS 方法 (`azure`/`openai`/`edge`/`fish`/`gpt_sovits`) | `azure` |
+| `BURN_SUBTITLES` | 是否烧录字幕 (`true`/`false`) | `true` |
+| `DEMUCS` | 是否人声分离 (`true`/`false`) | `true` |
+| `SUBTITLE_MAX_LENGTH` | 字幕最大字符数 | `75` |
+
+完整配置请参考 [`.env.example`](./.env.example) 文件。
+
+## 🔌 Python API
+
+VideoVerse 提供了 Python API，支持异步和同步调用：
+
+### 同步调用
+
+```python
+from videoverse import process_video
+
+# 处理视频（同步）
+output_path = process_video(
+    video_source="https://youtube.com/watch?v=xxx",  # 或本地路径
+    source_language="en",
+    target_language="zh",
+    dubbing=True
+)
+print(f"Output: {output_path}")
+```
+
+### 异步调用
+
+```python
+import asyncio
+from videoverse.api import process_video_async
+
+async def main():
+    output_path = await process_video_async(
+        video_source="https://youtube.com/watch?v=xxx",
+        source_language="en",
+        target_language="zh",
+        dubbing=True
+    )
+    print(f"Output: {output_path}")
+
+asyncio.run(main())
+```
 
 ## 🔌 API 支持
 
 VideoVerse 支持 OpenAI 兼容 API 格式和多种 TTS 接口：
 
-- **大语言模型**: `claude-3-5-sonnet`、`gpt-4.1`、`deepseek-v3`、`gemini-2.0-flash`...（按性能排序）
+- **大语言模型**: `claude-3-5-sonnet`、`gpt-4o`、`deepseek-v3`、`gemini-2.0-flash`...（按性能排序）
 - **WhisperX**: 本地运行 whisperX (large-v3) 或使用 302.ai API
-- **TTS**: `azure_tts`、`openai_tts`、`fish_tts`、`gpt_sovits`、`edge_tts`、`custom_tts` 等
+- **TTS**: `azure_tts`、`openai_tts`、`fish_tts`、`gpt_sovits`、`edge_tts`
 
 > **提示**: VideoVerse 与 **[302.ai](https://gpt302.saaslink.net/C2oHR9)** 兼容 - 一个 API 密钥访问所有服务（LLM、WhisperX、TTS）。或者使用 Ollama 和 Edge-TTS 本地免费运行，无需 API！
-
-## 📦 批处理模式
-
-批处理模式支持批量处理多个视频：
-
-1. 编辑 `batch/tasks_setting.xlsx` 配置文件
-   - `Video File`: YouTube 链接或本地文件路径
-   - `Source Language`: 源语言
-   - `Target Language`: 目标语言
-   - `Dubbing`: 是否配音（0/1）
-
-2. 运行批处理脚本
-   ```bash
-   # Windows
-   batch\OneKeyBatch.bat
-   ```
-
-3. 查看处理结果
-   - 成功：输出文件在 `output/` 目录
-   - 失败：文件移至 `output/ERROR/`，状态记录回 Excel
-
-详细说明请参考 [批处理文档](./batch/README.zh.md)。
 
 ## 📂 输出文件结构
 
@@ -317,8 +352,7 @@ output/
 │   └── tts_tasks.xlsx                # TTS 任务表
 │
 ├── output_sub.mp4                    # 带字幕的视频
-├── output_dub.mp4                    # 最终配音视频
-└── ERROR/                            # 失败的任务
+└── output_dub.mp4                    # 最终配音视频
 ```
 
 ## ⚠️ 当前限制

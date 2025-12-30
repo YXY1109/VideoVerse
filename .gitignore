@@ -218,7 +218,7 @@ __marimo__/
 
 .idea
 .claude
-/_model_cache/
 /output/
 /.streamlit/
 /files/demo.mp4
+/model_cache/

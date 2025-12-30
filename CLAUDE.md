@@ -4,160 +4,143 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，fork 自 [VideoLingo](https://github.com/Huanshere/VideoLingo)。它实现了一个 12 步的 AI 处理流水线，用于自动化视频翻译和配音，生成 Netflix 级别的高质量单行字幕。
+VideoVerse 是一个基于 AI 的视频翻译和配音工具，使用 13 步异步处理流水线从 YouTube 或本地视频生成带字幕和配音的视频。
 
-## 核心架构
+### 核心技术栈
+- **Python 3.10-3.12** (uv 包管理)
+- **异步架构**: httpx + asyncio + aiocache
+- **AI/ML**: WhisperX 3.2 (词级ASR), Spacy 3.7 (NLP), PyTorch 2.1 (CUDA 11.8)
+- **配置管理**: pydantic-settings + 环境变量
+- **视频处理**: MoviePy, Librosa, PyAV
 
-### 12 步处理流水线
-
-项目采用模块化流水线架构，每一步独立运行，通过中间文件传递数据：
-
-```
-core/_1_ytdlp.py          # ① YouTube 视频下载
-core/_2_asr.py            # ② WhisperX 词级 ASR + 时间轴对齐
-core/_3_1_split_nlp.py    # ③ NLP 句子分割 (Spacy)
-core/_3_2_split_meaning.py # ④ AI 语义分割
-core/_4_1_summarize.py    # ⑤ 内容摘要 + 术语提取
-core/_4_2_translate.py    # ⑥ 多步翻译 (直译 → 反思 → 意译)
-core/_5_split_sub.py      # ⑦ 字幕长度优化 (最长 75 字符)
-core/_6_gen_sub.py        # ⑧ 时间轴对齐
-core/_7_sub_into_vid.py   # ⑨ 字幕烧录
-core/_8_1_audio_task.py   # ⑩ 音频任务生成
-core/_10_gen_audio.py     # ⑪ TTS 音频生成
-core/_11_merge_audio.py   # ⑫ 音频合并
-core/_12_dub_to_vid.py    # ⑫ 最终配音合成
-```
-
-### 架构设计模式
-
-- **管道模式**: 每步独立处理，通过 `output/log/` 中的文件通信
-- **策略模式**: ASR (`core/asr_backend/`) 和 TTS (`core/tts_backend/`) 支持多种后端
-- **装饰器模式**: `core/utils/decorator.py` 中的 `@check_file_exists` 实现断点续传
-- **配置驱动**: 所有设置集中在 `config.yaml`
-
-### 模块组织
-
-```
-core/
-├── asr_backend/          # ASR 后端: whisperX_local, whisperX_302, elevenlabs_asr
-├── tts_backend/          # TTS 后端: azure, openai, fish, gpt_sovits, edge, cosyvoice2, f5tts, custom
-├── spacy_utils/          # NLP 分割工具
-├── st_utils/             # Streamlit UI 组件
-├── utils/
-│   ├── ask_gpt.py        # LLM API 调用 (OpenAI 兼容)
-│   ├── config_utils.py   # 线程安全的 load_key()/update_key()
-│   ├── decorator.py      # @except_handler, @check_file_exists
-│   └── models.py         # 文件路径定义
-├── prompts.py            # AI Prompt 模板
-└── translate_lines.py    # 三步翻译逻辑
-```
-
-## 常用开发命令
-
-### 环境配置
+### 常用命令
 
 ```bash
-# 使用 uv 安装依赖 (Python 3.10-3.12)
+# 安装依赖
 uv sync
 
-# PyTorch 使用 CUDA 11.8 索引 (在 pyproject.toml 中配置)
+# 运行 API (异步调用)
+python -c "import asyncio; from videoverse.api import process_video_async; asyncio.run(process_video_async('video_url', 'en', 'zh'))"
+
+# 运行 API (同步调用)
+python -c "from videoverse import process_video; process_video('video_url', 'en', 'zh')"
 ```
 
-### 运行应用
+### 环境变量配置
+
+项目使用 `.env` 文件配置，通过 `pydantic-settings` 加载 (见 `src/config.py`)。最小配置：
 
 ```bash
-# Streamlit UI 模式 (主入口)
-streamlit run main.py
+# LLM API (必需)
+OPENAI_API_KEY=your_key
+OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o
 
-# 批处理模式
-python batch/utils/batch_processor.py
-# Windows 系统:
-batch\OneKeyBatch.bat
+# TTS (可选, edge 免费)
+TTS_METHOD=edge
+EDGE_TTS_VOICE=zh-CN-XiaoxiaoNeural
+
+# ASR (可选, local 默认)
+WHISPER_RUNTIME=local
+WHISPER_MODEL=large-v3
 ```
 
-### 配置管理
+完整配置参考 `.env.example`。
 
-- 所有配置在 `config.yaml`
-- 使用 `core.utils.config_utils` 中的 `load_key("path.to.key")` 和 `update_key("path.to.key", value)`
-- 支持嵌套键: `load_key("api.model")`
-- 配置操作是线程安全的
+### 13 步异步流水线架构
 
-## 重要实现说明
-
-### 断点续传能力
-
-每个流水线步骤使用 `@check_file_exists(file_path)` 装饰器。如果输出文件已存在，该步骤会被跳过。要重新运行某步骤，删除 `output/log/` 中对应的输出文件。
-
-### AI Prompts
-
-所有 Prompt 集中在 `core/prompts.py`。遵循现有模式保持一致性。项目使用三步翻译流程：
-1. 直译 (Literal translation)
-2. 反思 (Reflection - 自我修正)
-3. 意译 (Free translation - 润色)
-
-### LLM 集成
-
-使用 `core/utils/ask_gpt.py` 进行 OpenAI 兼容的 API 调用。在 `config.yaml` 中配置：
-```yaml
-api:
-  key: 'your-api-key'
-  base_url: 'https://api.openai.com/v1'  # 或兼容端点
-  model: 'gpt-4o'
-  llm_support_json: true
-  max_tokens: 8192
+```
+src/
+├── pipeline.py           # 主流水线 (run_pipeline)
+├── api.py                # Python API 接口
+├── config.py             # pydantic-settings 配置
+│
+├── steps/                # 13 个处理步骤 (每个文件包含 step_XX_xxx 函数)
+│   ├── 01_download.py    # YouTube 下载 (yt-dlp)
+│   ├── 02_asr.py         # 语音识别 (WhisperX 词级时间轴)
+│   ├── 03_nlp_split.py   # NLP 分割 (Spacy)
+│   ├── 04_meaning_split.py # AI 语义分割
+│   ├── 05_summarize.py   # 摘要 + 术语提取
+│   ├── 06_translate.py   # 多步翻译 (直译→反思→意译)
+│   ├── 07_split_sub.py   # 字幕长度优化
+│   ├── 08_gen_sub.py     # 字幕时间轴对齐
+│   ├── 09_burn_sub.py    # 字幕烧录
+│   ├── 10_audio_task.py  # 音频任务生成
+│   ├── 11_gen_audio.py   # TTS 音频生成
+│   ├── 12_merge_audio.py # 音频合并
+│   └── 13_dubbing.py     # 最终配音合成
+│
+├── backends/             # ASR/TTS 后端 (策略模式)
+│   ├── asr/              # ASR: whisperx_local, whisperx_api, elevenlabs
+│   └── tts/              # TTS: azure, openai, edge, fish, gpt_sovits
+│
+├── tools/                # 工具模块
+│   ├── prompts.py        # AI Prompt 模板
+│   ├── translate_lines.py # 三步翻译逻辑
+│   └── spacy_utils/      # NLP 分割工具
+│
+└── utils/                # 核心工具
+    ├── llm.py            # 异步 LLM API (OpenAI 兼容)
+    ├── http.py           # 异步 HTTP 客户端
+    ├── cache.py          # 异步缓存
+    ├── decorators.py     # 装饰器 (@async_check_file_exists, @async_except_handler)
+    ├── paths.py          # 路径常量
+    └── common.py         # 通用工具
 ```
 
-### 添加新的 TTS/ASR 后端
+### 架构要点
 
-1. 在 `core/tts_backend/` 或 `core/asr_backend/` 中创建新文件
-2. 遵循现有接口模式 (如 `azure_tts.py`, `whisperX_local.py`)
-3. 在 UI 配置中更新 `tts_method` 选项
+1. **异步优先**: 所有 I/O 操作使用异步 (`asyncio`, `httpx`, `AsyncOpenAI`)
+2. **策略模式**: ASR/TTS 后端可通过 `TTS_METHOD`/`WHISPER_RUNTIME` 环境变量切换
+3. **缓存机制**: LLM 调用结果缓存 (`utils/cache.py`)，支持断点续传
+4. **装饰器**: `@async_check_file_exists` 跳过已存在文件，`@async_except_handler` 自动重试
+5. **配置驱动**: 使用 `pydantic-settings` 从环境变量加载配置，`get_settings()` 获取单例
 
-### 批处理模式
+### 语言检测与分割
 
-任务在 `batch/tasks_setting.xlsx` 中定义：
-- `Video File`: YouTube URL 或本地文件名
-- `Source Language`: 源语言代码
-- `Target Language`: 自然语言描述
-- `Dubbing`: 0 不配音, 1 配音
+- **中文**: 使用 jieba 分词，`whisper_language=zh` 时使用 Belle-whisper-large-v3-zh-punct-fasterwhisper 模型
+- **其他语言**: 使用对应 Spacy 模型 (`en_core_web_md` 等)，见 `config.py` 中的 `spacy_model_map`
 
-失败的任务移至 `output/ERROR/`，状态记录回 Excel。
+### LLM 提示词管理
 
-## 文件路径约定
+所有 AI Prompt 模板在 `src/tools/prompts.py` 中定义：
+- `get_split_prompt()` - 语义分割
+- `get_summary_prompt()` - 摘要和术语提取
+- `get_prompt_faithfulness()` - 直译
+- `get_prompt_expressiveness()` - 意译
+- `get_align_prompt()` - 字幕对齐
 
-- 输出文件: `output/` 目录
-- 中间日志: `output/log/`
-- 音频: `output/audio/`
-- 模型缓存: `_model_cache/` (通过 `model_dir` 配置)
-- 参考音频: `output/audio/refers/`
+### 输出目录结构
 
-## 依赖
+```
+output/
+├── log/                   # 日志和中间文件
+│   ├── cleaned_chunks.xlsx      # 转录文本
+│   ├── split_by_nlp.txt         # NLP 分割
+│   ├── split_by_meaning.txt     # 语义分割
+│   ├── terminology.json         # 术语表
+│   ├── translation_results.xlsx # 翻译结果
+│   └── gpt_log/                 # LLM 调用日志
+├── audio/                 # 音频处理
+│   ├── raw.mp3            # 原始音频
+│   ├── vocal.mp3          # 人声音频
+│   ├── refers/            # 参考音频
+│   ├── segs/              # TTS 片段
+│   └── tts_tasks.xlsx     # TTS 任务表
+├── output_sub.mp4         # 带字幕视频
+└── output_dub.mp4         # 配音视频
+```
 
-主要依赖 (见 `pyproject.toml`):
-- **Python**: 3.10-3.12
-- **Streamlit**: 1.52.2 (Web UI)
-- **WhisperX**: 3.2.0 (带对齐的 ASR)
-- **Spacy**: 3.7.4 (NLP)
-- **PyTorch**: 2.1.2 with CUDA 11.8
-- **MoviePy**: 1.0.3 (视频编辑)
-- **OpenAI**: 1.55.3 (LLM 客户端)
+### 注意事项
 
-### 本地依赖
+1. **中文编码**: WhisperX faster-whisper 存在中文乱码 bug，在 `whisperx_local.py:transcribe_audio_impl()` 中有修复逻辑
+2. **GPU 内存**: WhisperX 根据 GPU 内存自动调整 batch_size (8GB+ 用 16，否则用 2)
+3. **HuggingFace 镜像**: 自动检测最快的 HF 镜像 (官方 / hf-mirror.com)
+4. **字幕格式**: 严格单行字幕，最长 75 字符 (Netflix 标准)
+5. **配音速度**: 使用 `speed_factor_min/accept/max` 控制配音速度调整
 
-- `files/demucs-main/` - Demucs 人声分离
-- `files/en_core_web_md-3.7.1-py3-none-any.whl` - Spacy 英语模型
+### 依赖说明
 
-## 语言支持
-
-### 输入语言 (8 种)
-英语 (最佳)、俄语、法语、德语、意大利语、西班牙语、日语、中文 (使用增强模型)
-
-### UI 语言 (7 种)
-zh-CN, en, zh-HK, ja, es, ru, fr (通过 `display_language` 配置)
-
-## 代码风格说明
-
-- 使用从项目根目录开始的绝对导入: `from core.utils import load_key`
-- `core/utils/decorator.py` 中的装饰器用于重试和文件检查
-- 配置操作需要线程安全 (使用 `threading.Lock`)
-- `core/prompts.py` 中的 Prompt 使用 load_key() 动态插入语言
+- PyTorch 使用 CUDA 11.8 版本，通过 `[tool.uv.sources]` 从 PyTorch index 安装
+- Demucs 和 Spacy 模型使用本地路径 (`files/` 目录)
+- 某些包使用 override dependencies (av>=13.0.0, tokenizers)
