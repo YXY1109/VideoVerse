@@ -1,18 +1,9 @@
-# * 带 * 标记的为高级设置，不会在 Streamlit 页面显示，只能手动在 config.py 中修改
-# 建议在 streamlit 页面中进行设置
-# -------------------
-# version: "3.0.0"
-# author: "Huanshere"
-# -------------------
-
 ## ======================== 基础设置 ======================== ##
 
 display_language: "zh-CN"
 
-# API 设置（敏感信息请通过 .env 文件配置，优先级高于此处）
+# API 设置（通过 .env 文件配置环境变量）
 api:
-  key: ''  # 通过环境变量 OPENAI_API_KEY 配置
-  base_url: 'https://api.openai.com/v1'  # 通过环境变量 OPENAI_API_BASE 配置
   model: 'gpt-4.1-mini'
   llm_support_json: true
   # * LLM 输出最大 token 数，用于长文本翻译
@@ -34,10 +25,6 @@ whisper:
   detected_language: 'en'
   # Whisper 运行模式 ["local", "cloud", "elevenlabs"]。指定运行位置，cloud 使用 302.ai API
   runtime: 'local'
-  # 302.ai API 密钥（通过环境变量 WHISPERX_302_API_KEY 配置）
-  whisperX_302_api_key: ''
-  # ElevenLabs API 密钥（通过环境变量 ELEVENLABS_API_KEY 配置）
-  elevenlabs_api_key: ''
 
 # 是否将字幕烧录到视频中
 burn_subtitles: true
@@ -77,8 +64,6 @@ tts_method: 'azure_tts'
 
 # SiliconFlow FishTTS
 sf_fish_tts:
-  # SiliconFlow API 密钥（通过环境变量 SF_FISH_TTS_API_KEY 配置）
-  api_key: ''
   # 仅用于 mode "preset"
   voice: 'anna'
   # * 仅用于 mode "custom"，请勿手动设置
@@ -89,25 +74,21 @@ sf_fish_tts:
 
 # OpenAI TTS-1 API 配置，仅支持 302.ai API
 openai_tts:
-  api_key: ''  # 通过环境变量 OPENAI_TTS_API_KEY 配置
   voice: 'alloy'
 
 # Azure 配置，仅支持 302.ai API
 azure_tts:
-  api_key: ''  # 通过环境变量 AZURE_TTS_API_KEY 配置
   voice: 'zh-CN-YunfengNeural'
 
 # FishTTS 配置，仅支持 302.ai API
 fish_tts:
-  api_key: ''  # 通过环境变量 FISH_TTS_API_KEY 配置
   character: 'AD学姐'
   character_id_dict:
     'AD学姐': '7f92f8afb8ec43bf81429cc1c9199cb1'
     '丁真': '54a5170264694bfc8e9ad98df7bd89c3'
 
 # SiliconFlow CosyVoice2 克隆
-sf_cosyvoice2:
-  api_key: ''  # 通过环境变量 SF_COSYVOICE2_API_KEY 配置
+sf_cosyvoice2: {}
 
 # Edge TTS 配置
 edge_tts:
@@ -118,8 +99,7 @@ gpt_sovits:
   character: 'Huanyuv2'
   refer_mode: 3
 
-f5tts:
-  302_api: ''  # 通过环境变量 F5TTS_302_API_KEY 配置
+f5tts: {}
 
 # * 音频速度范围
 speed_factor:
@@ -142,19 +122,19 @@ model_dir: './_model_cache'
 
 # 支持的上传视频格式
 allowed_video_formats:
-- 'mp4'
-- 'mov'
-- 'avi'
-- 'mkv'
-- 'flv'
-- 'wmv'
-- 'webm'
+  - 'mp4'
+  - 'mov'
+  - 'avi'
+  - 'mkv'
+  - 'flv'
+  - 'wmv'
+  - 'webm'
 
 allowed_audio_formats:
-- 'wav'
-- 'mp3'
-- 'flac'
-- 'm4a'
+  - 'wav'
+  - 'mp3'
+  - 'flac'
+  - 'm4a'
 
 # Spacy 模型
 spacy_model_map:
@@ -169,17 +149,17 @@ spacy_model_map:
 
 # 使用空格作为分隔符的语言
 language_split_with_space:
-- 'en'
-- 'es'
-- 'fr'
-- 'de'
-- 'it'
-- 'ru'
+  - 'en'
+  - 'es'
+  - 'fr'
+  - 'de'
+  - 'it'
+  - 'ru'
 
 # 不使用空格作为分隔符的语言
 language_split_without_space:
-- 'zh'
-- 'ja'
+  - 'zh'
+  - 'ja'
 
 # 中文 NLP 设置
 # 中文停用词文件路径（用于 jieba 分割）

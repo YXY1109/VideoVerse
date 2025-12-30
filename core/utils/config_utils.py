@@ -59,9 +59,8 @@ def load_key(key, default=None):
         if isinstance(value, dict) and k in value:
             value = value[k]
         else:
-            if default is not None:
-                return default
-            raise KeyError(f"Key '{k}' not found in configuration")
+            # 配置文件中不存在该键，返回默认值
+            return default if default is not None else ''
     return value
 
 
