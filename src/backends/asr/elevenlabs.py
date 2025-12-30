@@ -135,9 +135,8 @@ async def transcribe_audio(
         logger.info(f"API response status: {response.status_code}")
         result = response.json()
 
-        # 保存检测到的语言
-        detected_language = ISO_639_2_TO_1.get(result["language_code"], result["language_code"])
-        # TODO: 更新 detected_language
+        # 检测到的语言（暂不更新配置，保持原始设置）
+        # detected_language = ISO_639_2_TO_1.get(result["language_code"], result["language_code"])
 
         # 调整时间戳
         if start is not None and 'words' in result:

@@ -72,10 +72,9 @@ async def transcribe_audio(
 
     response_json = response.json()
 
-    # 更新检测到的语言
-    if 'language' in response_json:
-        # TODO: 更新 detected_language 到配置
-        pass
+    # 检测到的语言（暂不更新配置，保持原始设置）
+    # if 'language' in response_json:
+    #     settings.detected_language = response_json['language']
 
     # 调整时间戳
     if start is not None:

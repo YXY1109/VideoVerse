@@ -6,6 +6,8 @@
 import asyncio
 import os
 import subprocess
+import sys
+from pathlib import Path
 from typing import Dict, List, Tuple
 import pandas as pd
 from pydub import AudioSegment
@@ -190,18 +192,42 @@ def save_results_sync(df: pd.DataFrame, output_path: str = CLEANED_CHUNKS) -> No
     logger.info(f"Results saved to {output_path}")
 
 
-# TODO: 实现 Demucs 人声分离（异步版本）
 async def demucs_audio(input_audio: str, output_audio: str) -> None:
     """异步人声分离（Demucs）"""
-    # 使用 asyncio.to_thread 调用同步的 demucs 处理
-    # TODO: 从 core/asr_backend/demucs_vl.py 迁移
     logger.info(f"Demucs vocal separation: {input_audio} -> {output_audio}")
+
+    # 获取当前 Python 解释器路径
+    python_exe = sys.executable
+
+    # 获取输入文件名（不含扩展名）
+    input_name = Path(input_audio).stem
+
+    # Demucs 输出路径: {AUDIO_DIR}/htdemucs/{input_name}/vocals.mp3
+    demucs_out_dir = AUDIO_DIR / "htdemucs" / input_name
+    vocals_file = demucs_out_dir / "vocals.mp3"
+
+    # 使用 --two-stems vocals 只分离人声，--mp3 输出 mp3 格式
     await asyncio.to_thread(
         lambda: subprocess.run([
-            'python', '-m', 'demucs.separate', '-n', 'htdemucs',
-            '--out', str(AUDIO_DIR), str(input_audio)
+            python_exe, '-m', 'demucs.separate',
+            '-n', 'htdemucs',
+            '--two-stems', 'vocals',
+            '--mp3',
+            '--out', str(AUDIO_DIR),
+            str(input_audio)
         ], check=True)
     )
+
+    # 移动文件到目标位置
+    if vocals_file.exists():
+        import shutil
+        shutil.move(str(vocals_file), str(output_audio))
+        # 清理 demucs 输出目录
+        if demucs_out_dir.exists():
+            shutil.rmtree(demucs_out_dir.parent, ignore_errors=True)
+        logger.info(f"Moved {vocals_file} to {output_audio}")
+    else:
+        raise FileNotFoundError(f"Demucs output not found: {vocals_file}")
 
 
 async def transcribe_audio(
@@ -214,21 +240,14 @@ async def transcribe_audio(
     """异步转录音频片段"""
     # 根据 runtime 选择不同的 ASR 后端
     if runtime == "local":
-        # TODO: 迁移 core/asr_backend/whisperX_local.py
-        # 这里先返回模拟结果
-        logger.info(f"Transcribing with local model: {start}-{end}")
-        await asyncio.sleep(0.1)  # 模拟异步操作
-        return {'segments': []}
+        from src.backends.asr import whisperx_local
+        return await whisperx_local.transcribe_audio(audio_file, vocal_audio, start, end)
     elif runtime == "cloud":
-        # TODO: 迁移 core/asr_backend/whisperX_302.py
-        logger.info(f"Transcribing with 302 API: {start}-{end}")
-        await asyncio.sleep(0.1)
-        return {'segments': []}
+        from src.backends.asr import whisperx_api
+        return await whisperx_api.transcribe_audio(audio_file, vocal_audio, start, end)
     elif runtime == "elevenlabs":
-        # TODO: 迁移 core/asr_backend/elevenlabs_asr.py
-        logger.info(f"Transcribing with ElevenLabs API: {start}-{end}")
-        await asyncio.sleep(0.1)
-        return {'segments': []}
+        from src.backends.asr import elevenlabs
+        return await elevenlabs.transcribe_audio(audio_file, vocal_audio, start, end)
     else:
         raise ValueError(f"Unknown ASR runtime: {runtime}")
 
