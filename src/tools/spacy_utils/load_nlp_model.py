@@ -1,8 +1,8 @@
 import spacy
 from spacy.cli import download
 
-from ....utils.common import rprint, settings
-from ....utils.decorators import async_except_handler
+from src.utils.common import rprint, settings
+from src.utils.decorators import async_except_handler
 
 SPACY_MODEL_MAP = settings.spacy_model_map
 

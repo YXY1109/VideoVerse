@@ -7,8 +7,8 @@ import asyncio
 import subprocess
 from pathlib import Path
 
-from ..config import get_settings
-from ..utils.paths import AUDIO_SEGS_DIR, AUDIO_DIR
+from src.config import get_settings
+from src.utils.paths import AUDIO_SEGS_DIR, AUDIO_DIR
 import logging
 
 logger = logging.getLogger(__name__)

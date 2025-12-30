@@ -11,8 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ..config import get_settings
-from ..utils.paths import INPUT_VIDEO_FILE, OUTPUT_DIR
+from src.config import get_settings
+from src.utils.paths import INPUT_VIDEO_FILE, OUTPUT_DIR
 
 settings = get_settings()
 

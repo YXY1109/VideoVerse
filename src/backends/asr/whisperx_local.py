@@ -10,8 +10,8 @@ import librosa
 import torch
 import whisperx
 
-from ...utils.common import rprint, settings
-from ...utils.paths import LOG_DIR
+from src.utils.common import rprint, settings
+from src.utils.paths import LOG_DIR
 
 logger = logging.getLogger(__name__)
 

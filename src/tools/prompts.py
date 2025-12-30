@@ -1,6 +1,6 @@
 import json
 
-from ...config import get_settings
+from src.config import get_settings
 
 settings = get_settings()
 

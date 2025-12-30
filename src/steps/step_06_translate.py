@@ -6,10 +6,10 @@
 import asyncio
 from pathlib import Path
 
-from ..config import get_settings
-from ..utils.paths import TRANSLATION_RESULTS, TERMINOLOGY
-from ..utils.llm import ask_llm_batch
-from ..utils.decorators import async_check_file_exists
+from src.config import get_settings
+from src.utils.paths import TRANSLATION_RESULTS, TERMINOLOGY
+from src.utils.llm import ask_llm_batch
+from src.utils.decorators import async_check_file_exists
 import logging
 
 logger = logging.getLogger(__name__)

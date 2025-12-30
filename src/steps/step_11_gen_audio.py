@@ -6,9 +6,9 @@
 import asyncio
 from pathlib import Path
 
-from ..config import get_settings
-from ..utils.paths import AUDIO_SEGS_DIR
-from ..utils.decorators import async_check_file_exists
+from src.config import get_settings
+from src.utils.paths import AUDIO_SEGS_DIR
+from src.utils.decorators import async_check_file_exists
 import logging
 
 logger = logging.getLogger(__name__)

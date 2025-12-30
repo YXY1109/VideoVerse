@@ -5,7 +5,7 @@ VideoVerse 通用工具函数
 """
 from rich import print as rprint
 
-from ..config import get_settings
+from src.config import get_settings
 
 settings = get_settings()
 

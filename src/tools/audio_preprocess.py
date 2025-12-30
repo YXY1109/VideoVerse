@@ -8,7 +8,7 @@ from pydub.silence import detect_silence
 from pydub.utils import mediainfo
 from rich import print as rprint
 
-from ....utils.paths import AUDIO_DIR, RAW_AUDIO_FILE, CLEANED_CHUNKS
+from src.utils.paths import AUDIO_DIR, RAW_AUDIO_FILE, CLEANED_CHUNKS
 
 # 类型兼容：Path 对象转字符串
 _AUDIO_DIR = str(AUDIO_DIR)

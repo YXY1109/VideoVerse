@@ -10,10 +10,10 @@ from typing import Any, Optional
 import httpx
 from openai import AsyncOpenAI
 
-from ..config import get_settings
-from .cache import get_cache_manager
-from .decorators import async_except_handler
-from .http import get_global_client
+from src.config import get_settings
+from src.utils.cache import get_cache_manager
+from src.utils.decorators import async_except_handler
+from src.utils.http import get_global_client
 import logging
 
 logger = logging.getLogger(__name__)

@@ -8,8 +8,8 @@ import httpx
 import librosa
 import soundfile as sf
 
-from ...config import get_settings
-from ...utils.paths import LOG_DIR
+from src.config import get_settings
+from src.utils.paths import LOG_DIR
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

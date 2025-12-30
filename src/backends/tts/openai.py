@@ -2,7 +2,7 @@ import logging
 
 from openai import AsyncOpenAI
 
-from ...config import get_settings
+from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

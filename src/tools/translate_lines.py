@@ -3,9 +3,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .prompts import generate_shared_prompt, get_prompt_faithfulness, get_prompt_expressiveness
-from ...utils.llm import ask_llm
-from ...config import get_settings
+from src.tools.prompts import generate_shared_prompt, get_prompt_faithfulness, get_prompt_expressiveness
+from src.utils.llm import ask_llm
+from src.config import get_settings
 
 settings = get_settings()
 console = Console()

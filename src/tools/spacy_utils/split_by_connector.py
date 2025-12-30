@@ -1,8 +1,8 @@
 import os
 import warnings
 
-from .load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_CONNECTOR_FILE
-from ....utils.common import rprint
+from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_CONNECTOR_FILE
+from src.utils.common import rprint
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 

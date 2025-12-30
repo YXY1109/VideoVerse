@@ -7,8 +7,8 @@ import asyncio
 import subprocess
 from pathlib import Path
 
-from ..config import get_settings
-from ..utils.paths import INPUT_VIDEO_FILE, OUTPUT_VIDEO_DUBBED
+from src.config import get_settings
+from src.utils.paths import INPUT_VIDEO_FILE, OUTPUT_VIDEO_DUBBED
 import logging
 
 logger = logging.getLogger(__name__)

@@ -2,9 +2,9 @@ import os
 import string
 import warnings
 
-from .load_nlp_model import SPLIT_BY_CONNECTOR_FILE
-from ....utils.common import get_joiner, rprint, settings
-from ....utils.paths import SPLIT_BY_NLP
+from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_CONNECTOR_FILE
+from src.utils.common import get_joiner, rprint, settings
+from src.utils.paths import SPLIT_BY_NLP
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 

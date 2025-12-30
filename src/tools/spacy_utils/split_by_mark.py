@@ -4,8 +4,8 @@ import warnings
 import pandas as pd
 from rich import print as rprint
 
-from .load_nlp_model import SPLIT_BY_MARK_FILE
-from ....utils.common import get_joiner, settings
+from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_MARK_FILE
+from src.utils.common import get_joiner, settings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 

@@ -12,15 +12,15 @@ from pydub import AudioSegment
 from pydub.silence import detect_silence
 from pydub.utils import mediainfo
 
-from ..config import get_settings
-from ..utils.paths import (
+from src.config import get_settings
+from src.utils.paths import (
     OUTPUT_DIR,
     AUDIO_DIR,
     RAW_AUDIO_FILE,
     VOCAL_AUDIO_FILE,
     CLEANED_CHUNKS,
 )
-from ..utils.decorators import async_check_file_exists
+from src.utils.decorators import async_check_file_exists
 import logging
 
 logger = logging.getLogger(__name__)

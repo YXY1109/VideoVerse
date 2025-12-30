@@ -14,8 +14,8 @@ import jieba
 import pandas as pd
 from rich import print as rprint
 
-from ....utils.common import get_joiner, settings
-from ....utils.paths import SPLIT_BY_NLP
+from src.utils.common import get_joiner, settings
+from src.utils.paths import SPLIT_BY_NLP
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
