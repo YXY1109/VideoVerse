@@ -12,10 +12,23 @@ from core.utils.models import _3_1_SPLIT_BY_NLP, _3_2_SPLIT_BY_MEANING
 
 console = Console()
 
+# 尝试导入 jieba（中文分词）
+try:
+    import jieba
+    JIEBA_AVAILABLE = True
+except ImportError:
+    JIEBA_AVAILABLE = False
 
-def tokenize_sentence(sentence, nlp):
-    doc = nlp(sentence)
-    return [token.text for token in doc]
+
+def tokenize_sentence(sentence, nlp, use_jieba=False):
+    """Tokenize a sentence using Spacy or jieba (for Chinese)"""
+    if use_jieba and JIEBA_AVAILABLE:
+        # 对中文使用 jieba 进行分词
+        return list(jieba.cut(sentence))
+    else:
+        # 对其他语言使用 Spacy
+        doc = nlp(sentence)
+        return [token.text for token in doc]
 
 
 def find_split_positions(original, modified):
@@ -90,15 +103,15 @@ def split_sentence(sentence, num_parts, word_limit=20, index=-1, retry_attempt=0
     return best_split
 
 
-def parallel_split_sentences(sentences, max_length, max_workers, nlp, retry_attempt=0):
+def parallel_split_sentences(sentences, max_length, max_workers, nlp, retry_attempt=0, use_jieba=False):
     """Split sentences in parallel using a thread pool."""
     new_sentences = [None] * len(sentences)
     futures = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         for index, sentence in enumerate(sentences):
-            # Use tokenizer to split the sentence
-            tokens = tokenize_sentence(sentence, nlp)
+            # Use tokenizer to split the sentence (jieba for Chinese, Spacy for others)
+            tokens = tokenize_sentence(sentence, nlp, use_jieba=use_jieba)
             # print("Tokenization result:", tokens)
             num_parts = math.ceil(len(tokens) / max_length)
             if len(tokens) > max_length:
@@ -126,11 +139,22 @@ def split_sentences_by_meaning():
     with open(_3_1_SPLIT_BY_NLP, 'r', encoding='utf-8') as f:
         sentences = [line.strip() for line in f.readlines()]
 
-    nlp = init_nlp()
+    # 检测语言，中文使用 jieba 进行 tokenization
+    whisper_language = load_key("whisper.language")
+    detected_language = load_key("whisper.detected_language")
+    language = detected_language if whisper_language == 'auto' else whisper_language
+    use_jieba = (language == 'zh' and JIEBA_AVAILABLE)
+
+    if use_jieba:
+        console.print('[cyan]🔍 Using jieba for Chinese tokenization in meaning split[/cyan]')
+    else:
+        nlp = init_nlp()
+
     # 🔄 process sentences multiple times to ensure all are split
     for retry_attempt in range(3):
         sentences = parallel_split_sentences(sentences, max_length=load_key("max_split_length"),
-                                             max_workers=load_key("max_workers"), nlp=nlp, retry_attempt=retry_attempt)
+                                             max_workers=load_key("max_workers"), nlp=nlp if not use_jieba else None,
+                                             retry_attempt=retry_attempt, use_jieba=use_jieba)
 
     # 💾 save results
     with open(_3_2_SPLIT_BY_MEANING, 'w', encoding='utf-8') as f:
