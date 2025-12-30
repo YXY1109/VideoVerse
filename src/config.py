@@ -3,21 +3,32 @@ VideoVerse 配置管理
 
 使用 pydantic-settings 从环境变量加载配置
 """
-from typing import List
+import os
+from typing import List, Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources import EnvSettingsSource
+
+
+# 检查是否在测试环境中
+_IS_TEST_ENV = os.getenv("DOTENV_DISABLED") is not None
 
 
 class Settings(BaseSettings):
     """VideoVerse 配置类"""
 
+    # 在测试环境中禁用 .env 文件加载
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=None if _IS_TEST_ENV else ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
     )
+
+    def __init__(self, **kwargs):
+        # 在测试环境中，清除传入的环境变量相关的 kwargs 优先级
+        super().__init__(**kwargs)
 
     # ==================== API 配置 ====================
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
