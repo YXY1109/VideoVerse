@@ -21,6 +21,9 @@ ENV_KEY_MAPPING = {
     # API 配置
     'api.key': 'OPENAI_API_KEY',
     'api.base_url': 'OPENAI_API_BASE',
+    'api.model': 'OPENAI_MODEL',
+    'api.llm_support_json': 'OPENAI_LLM_SUPPORT_JSON',
+    'api.max_tokens': 'OPENAI_MAX_TOKENS',
     # ASR 配置
     'whisper.whisperX_302_api_key': 'WHISPERX_302_API_KEY',
     'whisper.elevenlabs_api_key': 'ELEVENLABS_API_KEY',
@@ -31,6 +34,12 @@ ENV_KEY_MAPPING = {
     'fish_tts.api_key': 'FISH_TTS_API_KEY',
     'sf_cosyvoice2.api_key': 'SF_COSYVOICE2_API_KEY',
     'f5tts.302_api': 'F5TTS_302_API_KEY',
+}
+
+# 环境变量类型转换映射：配置键 -> 类型
+ENV_TYPE_MAPPING = {
+    'api.llm_support_json': bool,
+    'api.max_tokens': int,
 }
 
 
@@ -46,6 +55,13 @@ def load_key(key, default=None):
         env_value = os.environ[env_var]
         # 如果环境变量有值且不是占位符，返回环境变量的值
         if env_value and not env_value.startswith('your_') and env_value != 'YOUR_API_KEY':
+            # 根据配置类型进行转换
+            if key in ENV_TYPE_MAPPING:
+                target_type = ENV_TYPE_MAPPING[key]
+                if target_type == bool:
+                    return env_value.lower() in ('true', '1', 'yes', 'on')
+                elif target_type == int:
+                    return int(env_value)
             return env_value
 
     # 2. 从 config.yaml 读取

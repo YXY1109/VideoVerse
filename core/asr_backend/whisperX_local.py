@@ -98,9 +98,12 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     del model
     torch.cuda.empty_cache()
 
-    # Save language
-    update_key("whisper.language", result['language'])
-    if result['language'] == 'zh' and WHISPER_LANGUAGE != 'zh':
+    # Save detected language (preserve original whisper.language setting)
+    update_key("whisper.detected_language", result['language'])
+    # 仅当用户设置为 auto 时才同步更新 language（保持与 elevenlabs 行为一致）
+    if WHISPER_LANGUAGE == 'auto':
+        update_key("whisper.language", result['language'])
+    if result['language'] == 'zh' and WHISPER_LANGUAGE not in ['auto', 'zh']:
         raise ValueError("Please specify the transcription language as zh and try again!")
 
     # -------------------------

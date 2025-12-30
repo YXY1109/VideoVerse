@@ -49,6 +49,10 @@ def transcribe_audio_302(raw_audio_path: str, vocal_audio_path: str, start: floa
 
     response_json = response.json()
 
+    # Update detected language from API response
+    if 'language' in response_json:
+        update_key("whisper.detected_language", response_json['language'])
+
     if start is not None:
         for segment in response_json['segments']:
             segment['start'] += start
