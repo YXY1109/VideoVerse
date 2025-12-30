@@ -96,7 +96,7 @@ def process_text():
     with st.spinner(t("Using Whisper for transcription...")):
         _2_asr.transcribe()
     with st.spinner(t("Splitting long sentences...")):
-        _3_1_split_nlp.split_by_spacy()
+        _3_1_split_nlp.split_by_nlp()
         _3_2_split_meaning.split_sentences_by_meaning()
     with st.spinner(t("Summarizing and translating...")):
         _4_1_summarize.get_summary()

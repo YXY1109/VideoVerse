@@ -27,7 +27,7 @@ whisper:
   runtime: 'local'
 
   # ASR 自动检测到的语言（运行时由 ASR 后端自动更新，无需手动设置）
-  detected_language: 'en'
+  detected_language: ''
 
 # 转录前是否使用 Demucs 进行人声分离（推荐用于背景噪音较大的视频）
 demucs: true
@@ -77,7 +77,7 @@ fish_tts:
     '丁真': '54a5170264694bfc8e9ad98df7bd89c3'
 
 # --- SiliconFlow CosyVoice2 ---
-sf_cosyvoice2: { }
+sf_cosyvoice2: {}
 
 # --- Edge TTS (免费) ---
 edge_tts:
@@ -89,7 +89,7 @@ gpt_sovits:
   refer_mode: 3           # 1: 使用提供参考音频, 2: 使用视频首段, 3: 使用每段音频
 
 # --- F5TTS (302.ai) ---
-f5tts: { }
+f5tts: {}
 
 
 ## ======================== 高级设置 ======================== ##
@@ -141,22 +141,23 @@ model_dir: './_model_cache'
 
 # 支持的视频格式
 allowed_video_formats:
-  - 'mp4'
-  - 'mov'
-  - 'avi'
-  - 'mkv'
-  - 'flv'
-  - 'wmv'
-  - 'webm'
+- 'mp4'
+- 'mov'
+- 'avi'
+- 'mkv'
+- 'flv'
+- 'wmv'
+- 'webm'
 
 # 支持的音频格式
 allowed_audio_formats:
-  - 'wav'
-  - 'mp3'
-  - 'flac'
-  - 'm4a'
+- 'wav'
+- 'mp3'
+- 'flac'
+- 'm4a'
 
 # Spacy 模型映射（语言代码 -> 模型名）
+# 注意：中文使用 jieba 分词，不使用 spacy
 spacy_model_map:
   en: 'en_core_web_md'
   ru: 'ru_core_news_md'
@@ -165,21 +166,20 @@ spacy_model_map:
   es: 'es_core_news_md'
   de: 'de_core_news_md'
   it: 'it_core_news_md'
-  zh: 'zh_core_web_md'
 
 # 使用空格分隔的语言（用于 NLP 分词）
 language_split_with_space:
-  - 'en'
-  - 'es'
-  - 'fr'
-  - 'de'
-  - 'it'
-  - 'ru'
+- 'en'
+- 'es'
+- 'fr'
+- 'de'
+- 'it'
+- 'ru'
 
 # 不使用空格分隔的语言（使用专用分词器）
 language_split_without_space:
-  - 'zh'
-  - 'ja'
+- 'zh'
+- 'ja'
 
 # 中文 NLP 停用词文件路径（用于 jieba 分割）
 chinese_stopwords_file: 'files/chinese_stopwords.txt'

@@ -75,7 +75,7 @@ sys.path.append(current_dir)
 from core import load_key
 from core._1_ytdlp import download_video_ytdlp, find_video_files
 from core._2_asr import transcribe
-from core._3_1_split_nlp import split_by_spacy
+from core._3_1_split_nlp import split_by_nlp
 from core._3_2_split_meaning import split_sentences_by_meaning
 from core._4_1_summarize import get_summary
 from core._4_2_translate import translate_all
@@ -167,7 +167,7 @@ def process_subtitle():
 
     if steps.get('split_nlp'):
         print_step("② NLP 句子分割", "✂️")
-        split_by_spacy()
+        split_by_nlp()
 
     if steps.get('split_meaning'):
         print_step("③ AI 语义分割", "🧠")

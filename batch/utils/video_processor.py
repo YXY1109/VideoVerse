@@ -91,7 +91,7 @@ def process_input_file(file):
     return {'video_file': video_file}
 
 def split_sentences():
-    _3_1_split_nlp.split_by_spacy()
+    _3_1_split_nlp.split_by_nlp()
     _3_2_split_meaning.split_sentences_by_meaning()
 
 def summarize_and_translate():
