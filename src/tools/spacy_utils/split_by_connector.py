@@ -1,11 +1,8 @@
 import os
-import warnings
 
 from loguru import logger
 
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_CONNECTOR_FILE
-
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def analyze_connectors(doc, token):

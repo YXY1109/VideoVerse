@@ -1,12 +1,9 @@
 import itertools
 import os
-import warnings
 
 from loguru import logger
 
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_COMMA_FILE, SPLIT_BY_MARK_FILE
-
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def is_valid_phrase(phrase):

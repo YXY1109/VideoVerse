@@ -7,12 +7,7 @@ Jieba 中文分割模块
 import os
 import re
 import string
-import warnings
 from typing import List
-
-# 抑制 jieba 导入时的 pkg_resources 弃用警告
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 import jieba
 import pandas as pd
@@ -20,7 +15,7 @@ import pandas as pd
 from loguru import logger
 
 from src.utils.common import get_joiner, settings
-from src.utils.paths import SPLIT_BY_NLP
+from src.utils.paths import SPLIT_BY_NLP, CLEANED_CHUNKS, LOG_DIR
 
 # --------------------
 # 中文停用词和连接词
@@ -42,9 +37,9 @@ CHINESE_PUNCTUATION = ['。', '！', '？', '，', '；', '：', '、', '…']
 CHINESE_COMMA = '，'
 
 # 文件路径
-SPLIT_BY_MARK_FILE = "output/log/split_by_mark.txt"
-SPLIT_BY_COMMA_FILE = "output/log/split_by_comma.txt"
-SPLIT_BY_CONNECTOR_FILE = "output/log/split_by_connector.txt"
+SPLIT_BY_MARK_FILE = LOG_DIR / "split_by_mark.txt"
+SPLIT_BY_COMMA_FILE = LOG_DIR / "split_by_comma.txt"
+SPLIT_BY_CONNECTOR_FILE = LOG_DIR / "split_by_connector.txt"
 
 
 def load_chinese_stopwords():
@@ -73,7 +68,7 @@ def split_by_mark_jieba():
     joiner = get_joiner(language)
     logger.info(f"Using {language} language joiner: '{joiner}'")
 
-    chunks = pd.read_excel("output/log/cleaned_chunks.xlsx")
+    chunks = pd.read_excel(str(CLEANED_CHUNKS))
     chunks.text = chunks.text.apply(lambda x: x.strip('"').strip(""))
 
     # 合并文本

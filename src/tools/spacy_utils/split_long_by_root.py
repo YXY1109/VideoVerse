@@ -1,14 +1,11 @@
 import os
 import string
-import warnings
 
 from loguru import logger
 
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_CONNECTOR_FILE
 from src.utils.common import get_joiner, settings
 from src.utils.paths import SPLIT_BY_NLP
-
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def split_long_sentence(doc):

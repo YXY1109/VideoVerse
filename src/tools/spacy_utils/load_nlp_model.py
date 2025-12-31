@@ -5,6 +5,7 @@ from loguru import logger
 
 from src.utils.common import settings
 from src.utils.decorators import async_except_handler
+from src.utils.paths import LOG_DIR
 
 SPACY_MODEL_MAP = settings.spacy_model_map
 
@@ -39,6 +40,6 @@ def init_nlp():
 # --------------------
 # define the intermediate files
 # --------------------
-SPLIT_BY_COMMA_FILE = "output/log/split_by_comma.txt"
-SPLIT_BY_CONNECTOR_FILE = "output/log/split_by_connector.txt"
-SPLIT_BY_MARK_FILE = "output/log/split_by_mark.txt"
+SPLIT_BY_COMMA_FILE = LOG_DIR / "split_by_comma.txt"
+SPLIT_BY_CONNECTOR_FILE = LOG_DIR / "split_by_connector.txt"
+SPLIT_BY_MARK_FILE = LOG_DIR / "split_by_mark.txt"

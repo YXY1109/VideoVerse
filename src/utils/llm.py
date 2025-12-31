@@ -26,6 +26,7 @@ async def ask_llm(
     prompt: str,
     resp_type: Optional[str] = None,
     log_title: str = "default",
+    valid_def: Optional[callable] = None,
 ) -> Any:
     """
     异步调用 LLM API
@@ -34,6 +35,7 @@ async def ask_llm(
         prompt: 提示词
         resp_type: 响应类型 ("json" 或其他)
         log_title: 日志标题（用于缓存键）
+        valid_def: 验证函数，用于验证响应格式
 
     Returns:
         LLM 响应结果
@@ -82,6 +84,12 @@ async def ask_llm(
         result = json_repair.loads(resp_content)
     else:
         result = resp_content
+
+    # 验证响应格式
+    if valid_def is not None:
+        validation_result = valid_def(result)
+        if validation_result.get("status") == "error":
+            raise ValueError(f"LLM response validation failed: {validation_result.get('message')}")
 
     # 保存缓存
     await cache_manager.set_llm_cache(prompt, result, resp_type or log_title)

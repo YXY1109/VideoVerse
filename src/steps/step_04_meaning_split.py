@@ -5,7 +5,6 @@
 """
 import asyncio
 import math
-import warnings
 from concurrent.futures import ThreadPoolExecutor
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -19,9 +18,6 @@ from src.utils.llm import ask_llm
 
 from loguru import logger
 settings = get_settings()
-
-# 抑制 jieba 导入时的 pkg_resources 弃用警告
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
 # 尝试导入 jieba（中文分词）
 try:

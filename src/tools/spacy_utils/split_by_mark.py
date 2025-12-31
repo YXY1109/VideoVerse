@@ -1,5 +1,4 @@
 import os
-import warnings
 
 import pandas as pd
 
@@ -7,8 +6,7 @@ from loguru import logger
 
 from src.tools.spacy_utils.load_nlp_model import SPLIT_BY_MARK_FILE
 from src.utils.common import get_joiner, settings
-
-warnings.filterwarnings("ignore", category=FutureWarning)
+from src.utils.paths import CLEANED_CHUNKS
 
 
 def split_by_mark(nlp):
@@ -16,7 +14,7 @@ def split_by_mark(nlp):
     language = whisper_language  # 简化：直接使用设置的语言
     joiner = get_joiner(language)
     logger.info(f"Using {language} language joiner: '{joiner}'")
-    chunks = pd.read_excel("output/log/cleaned_chunks.xlsx")
+    chunks = pd.read_excel(str(CLEANED_CHUNKS))
     chunks.text = chunks.text.apply(lambda x: x.strip('"').strip(""))
 
     # join with joiner

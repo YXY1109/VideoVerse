@@ -2,7 +2,6 @@ import asyncio
 import os
 import subprocess
 import time
-import warnings
 from typing import Optional
 
 import librosa
@@ -15,8 +14,6 @@ from src.utils.paths import LOG_DIR
 from loguru import logger
 
 settings = get_settings()
-
-warnings.filterwarnings("ignore")
 
 
 # 本地实现函数

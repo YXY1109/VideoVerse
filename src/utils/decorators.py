@@ -63,8 +63,8 @@ def async_check_file_exists(output_path: str | Path):
             # 检查文件是否存在
             if os.path.exists(path):
                 logger.info(f"Skipping {func.__name__}, output file exists: {path}")
-                # 如果可能，返回已存在的文件内容
-                return None
+                # 返回已存在的文件路径
+                return str(path)
 
             # 执行函数
             result = await func(*args, **kwargs)
