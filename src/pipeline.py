@@ -5,6 +5,10 @@ VideoVerse 异步流水线
 """
 import asyncio
 
+# 必须首先导入 src 包，以触发 src/__init__.py 中的警告过滤和 jieba 预初始化
+# 这样可以确保在导入其他模块前，所有配置都已生效
+import src  # noqa: F401
+
 from loguru import logger
 
 from src.config import get_settings

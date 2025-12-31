@@ -69,7 +69,7 @@ warnings.filterwarnings("ignore", module="faster_whisper.*")
 
 
 # =============================================================================
-# 特殊初始化处理
+# 特殊库预初始化（必须在所有子模块导入前执行）
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -78,6 +78,7 @@ warnings.filterwarnings("ignore", module="faster_whisper.*")
 # 问题：jieba 在首次使用时会输出 "Building prefix dict..." 等信息到 stdout
 # 解决：在包导入时预先初始化 jieba，并使用 redirect_stdout 抑制输出
 # 效果：后续使用 jieba 时不会再显示初始化信息
+# 注意：必须尽早执行，确保在其他任何模块导入 jieba 之前完成
 try:
     import jieba
     with redirect_stdout(StringIO()):
