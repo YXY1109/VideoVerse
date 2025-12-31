@@ -158,19 +158,22 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     # 确保模型缓存目录存在
     os.makedirs(MODEL_DIR, exist_ok=True)
 
-    # 如果使用 HuggingFace 模型名称（非本地路径），尝试预下载
+    # 如果使用 HuggingFace 模型名称（非本地路径），尝试预下载并获取本地路径
+    original_model_name = model_name
     if '/' in model_name and not os.path.exists(model_name):
         logger.info(f"Pre-downloading model {model_name} from {hf_endpoint}...")
         try:
             from huggingface_hub import snapshot_download
-            snapshot_download(
+            local_path = snapshot_download(
                 repo_id=model_name,
                 cache_dir=MODEL_DIR,
                 endpoint=hf_endpoint,
                 resume_download=True,
                 local_files_only=False
             )
-            logger.info(f"Model {model_name} downloaded successfully")
+            logger.info(f"Model {model_name} downloaded successfully to: {local_path}")
+            # 使用本地路径加载模型，避免 faster-whisper 再次尝试下载
+            model_name = local_path
         except Exception as e:
             logger.warning(f"Failed to pre-download model: {e}")
             logger.info("Will try to load model directly (may fail if not cached)")
