@@ -21,16 +21,36 @@ def load_key(key: str):
 # @ step4_splitbymeaning.py
 def get_split_prompt(sentence, num_parts=2, word_limit=20):
     language = load_key("whisper.detected_language")
+
+    # 根据语言设置不同的字数/词数限制说明
+    if language == 'zh':
+        length_unit = "字（characters）"
+        min_length = "10"
+        split_instruction = """
+**CRITICAL FOR CHINESE**: Split into meaningful phrases (NOT single characters)!
+- Each part must have at least 10 characters
+- Split at natural boundaries: after punctuation, after complete phrases, or at semantic breaks
+- Example: "我们来对本章节的内容做一个总结" → "我们来对本章节的内容[br]做一个总结"
+"""
+    else:
+        length_unit = "words"
+        min_length = "3"
+        split_instruction = """
+- Split at natural boundaries: punctuation marks, conjunctions, or complete phrases
+- Each part must have at least 3 words
+"""
+
     split_prompt = f"""
 ## Role
 You are a professional Netflix subtitle splitter in **{language}**.
 
 ## Task
-Split the given subtitle text into **{num_parts}** parts, each less than **{word_limit}** words.
+Split the given subtitle text into **{num_parts}** parts, each less than **{word_limit}** {length_unit}.
 
 1. Maintain sentence meaning coherence according to Netflix subtitle standards
-2. MOST IMPORTANT: Keep parts roughly equal in length (minimum 3 words each)
+2. MOST IMPORTANT: Keep parts roughly equal in length (minimum {min_length} {length_unit} each)
 3. Split at natural points like punctuation marks or conjunctions
+{split_instruction}
 4. If provided text is repeated words, simply split at the middle of the repeated words.
 
 ## Steps
