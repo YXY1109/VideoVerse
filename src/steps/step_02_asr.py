@@ -39,18 +39,20 @@ def normalize_audio_volume(audio_path: str, output_path: str, target_db: float =
 
 
 def convert_video_to_audio_sync(video_file: str, output_path: str = RAW_AUDIO_FILE) -> None:
-    """同步转换视频为音频"""
+    """同步转换视频为音频（支持缓存）"""
     os.makedirs(AUDIO_DIR, exist_ok=True)
-    if not os.path.exists(output_path):
-        logger.info(f"Converting video to audio: {video_file} -> {output_path}")
-        subprocess.run([
-            'ffmpeg', '-y', '-i', video_file, '-vn',
-            '-c:a', 'libmp3lame', '-b:a', '32k',
-            '-ar', '16000',
-            '-ac', '1',
-            '-metadata', 'encoding=UTF-8', str(output_path)
-        ], check=True, stderr=subprocess.PIPE)
-        logger.info(f"Audio conversion complete: {output_path}")
+    if os.path.exists(output_path):
+        logger.info(f"Skipping audio conversion, file exists: {output_path}")
+        return
+    logger.info(f"Converting video to audio: {video_file} -> {output_path}")
+    subprocess.run([
+        'ffmpeg', '-y', '-i', video_file, '-vn',
+        '-c:a', 'libmp3lame', '-b:a', '32k',
+        '-ar', '16000',
+        '-ac', '1',
+        '-metadata', 'encoding=UTF-8', str(output_path)
+    ], check=True, stderr=subprocess.PIPE)
+    logger.info(f"Audio conversion complete: {output_path}")
 
 
 def split_audio_sync(audio_file: str, target_len: float = 30 * 60, win: float = 60) -> List[Tuple[float, float]]:
@@ -193,7 +195,12 @@ def save_results_sync(df: pd.DataFrame, output_path: str = CLEANED_CHUNKS) -> No
 
 
 async def demucs_audio(input_audio: str, output_audio: str) -> None:
-    """异步人声分离（Demucs）"""
+    """异步人声分离（Demucs，支持缓存）"""
+    # 检查输出文件是否已存在
+    if os.path.exists(output_audio):
+        logger.info(f"Skipping Demucs vocal separation, file exists: {output_audio}")
+        return
+
     logger.info(f"Demucs vocal separation: {input_audio} -> {output_audio}")
 
     # 获取当前 Python 解释器路径

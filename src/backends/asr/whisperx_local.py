@@ -7,6 +7,7 @@ from typing import Optional
 import librosa
 import torch
 import whisperx
+from huggingface_hub import snapshot_download
 
 from src.config import get_settings
 from src.utils.paths import LOG_DIR
@@ -42,13 +43,67 @@ def check_hf_mirror():
     return fastest_url
 
 
+def ensure_align_model(language_code: str, model_dir: str, endpoint: str = None) -> None:
+    """
+    确保 alignment 模型已下载（使用镜像）
+
+    Args:
+        language_code: 语言代码
+        model_dir: 模型缓存目录
+        endpoint: HuggingFace 镜像 endpoint
+    """
+    # WhisperX 的 alignment 模型映射
+    align_models = {
+        'zh': 'jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn',
+        'zh-cn': 'jonatasgrosman/wav2vec2-large-xlsr-53-chinese-zh-cn',
+        'en': 'jonatasgrosman/wav2vec2-large-xlsr-53-english',
+        'ja': 'jonatasgrosman/wav2vec2-large-xlsr-53-japanese',
+        'ko': 'jonatasgrosman/wav2vec2-large-xlsr-53-korean',
+        'es': 'jonatasgrosman/wav2vec2-large-xlsr-53-spanish',
+        'fr': 'jonatasgrosman/wav2vec2-large-xlsr-53-french',
+        'de': 'jonatasgrosman/wav2vec2-large-xlsr-53-german',
+        'it': 'jonatasgrosman/wav2vec2-large-xlsr-53-italian',
+        'pt': 'jonatasgrosman/wav2vec2-large-xlsr-53-portuguese',
+        'ru': 'jonatasgrosman/wav2vec2-large-xlsr-53-russian',
+        'nl': 'jonatasgrosman/wav2vec2-large-xlsr-53-dutch',
+        'tr': 'jonatasgrosman/wav2vec2-large-xlsr-53-turkish',
+    }
+
+    model_id = align_models.get(language_code)
+    if not model_id:
+        logger.info(f"No alignment model for language '{language_code}', skipping pre-download")
+        return
+
+    # 检查是否已缓存
+    cache_dir = os.path.join(model_dir, f"models--{model_id.replace('/', '--')}")
+    if os.path.exists(cache_dir):
+        logger.info(f"Alignment model already cached: {model_id}")
+        return
+
+    # 使用镜像下载
+    logger.info(f"Pre-downloading alignment model: {model_id} from {endpoint or 'default'}")
+    try:
+        snapshot_download(
+            repo_id=model_id,
+            cache_dir=model_dir,
+            endpoint=endpoint,
+            resume_download=True,
+            local_dir=None,
+            local_dir_use_symlinks=False
+        )
+        logger.info(f"Alignment model downloaded: {model_id}")
+    except Exception as e:
+        logger.warning(f"Failed to pre-download alignment model: {e}. Will try again during alignment.")
+
+
 def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     """
     WhisperX 本地转录实现（同步版本）
 
     此函数包含实际的 WhisperX 处理逻辑
     """
-    os.environ['HF_ENDPOINT'] = check_hf_mirror()
+    hf_endpoint = check_hf_mirror()
+    os.environ['HF_ENDPOINT'] = hf_endpoint
     WHISPER_LANGUAGE = settings.whisper_language
     MODEL_DIR = settings.model_cache_dir
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -65,16 +120,30 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
         logger.info(f"Batch size: {batch_size}, Compute type: {compute_type}")
     logger.info(f"Starting WhisperX for segment {start:.2f}s to {end:.2f}s")
 
+    # 中文使用专用的标点优化模型
     if WHISPER_LANGUAGE == 'zh':
         model_name = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper"
-        local_model = os.path.join(MODEL_DIR, "Belle-whisper-large-v3-zh-punct-fasterwhisper")
+        # HuggingFace 缓存目录格式
+        local_model = os.path.join(MODEL_DIR, "models--Huan69--Belle-whisper-large-v3-zh-punct-fasterwhisper")
     else:
         model_name = settings.whisper_model
-        local_model = os.path.join(MODEL_DIR, model_name)
+        local_model = os.path.join(MODEL_DIR, f"models--{model_name.replace('/', '--')}")
 
     if os.path.exists(local_model):
-        logger.info(f"Loading local WHISPER model: {local_model}")
-        model_name = local_model
+        # HuggingFace 缓存格式：需要找到实际的 snapshots 目录
+        snapshots_dir = os.path.join(local_model, "snapshots")
+        if os.path.exists(snapshots_dir):
+            # 获取 snapshots 子目录（只有一个）
+            snapshot_subdirs = [d for d in os.listdir(snapshots_dir) if os.path.isdir(os.path.join(snapshots_dir, d))]
+            if snapshot_subdirs:
+                actual_model_dir = os.path.join(snapshots_dir, snapshot_subdirs[0])
+                logger.info(f"Loading local WHISPER model: {actual_model_dir}")
+                model_name = actual_model_dir
+            else:
+                logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
+        else:
+            logger.info(f"Loading local WHISPER model: {local_model}")
+            model_name = local_model
     else:
         logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
 
@@ -113,8 +182,10 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     # 2. align by vocal audio
     # -------------------------
     align_start_time = time.time()
+    # 预下载 alignment 模型（使用镜像）
+    ensure_align_model(result["language"], MODEL_DIR, hf_endpoint)
     # Align timestamps using vocal audio
-    model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
+    model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device, model_dir=MODEL_DIR)
     result = whisperx.align(result["segments"], model_a, metadata, vocal_audio_segment, device,
                             return_char_alignments=False)
     align_time = time.time() - align_start_time
