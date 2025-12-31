@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # 在测试环境中禁用 .env 文件加载
     model_config = SettingsConfigDict(
-        env_file=None if _IS_TEST_ENV else ".env",
+        env_file=None if _IS_TEST_ENV else str(_PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
