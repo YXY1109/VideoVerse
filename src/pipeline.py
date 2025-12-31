@@ -3,11 +3,6 @@ VideoVerse 异步流水线
 
 实现 13 步视频处理流水线
 """
-import asyncio
-
-# 必须首先导入 src 包，以触发 src/__init__.py 中的警告过滤和 jieba 预初始化
-# 这样可以确保在导入其他模块前，所有配置都已生效
-import src  # noqa: F401
 
 from loguru import logger
 
@@ -144,12 +139,3 @@ async def run_pipeline(
     logger.info("=" * 60)
 
     return dubbed_video
-
-
-if __name__ == '__main__':
-    asyncio.run(run_pipeline(
-        video_source=r"D:\PycharmProjects\VideoVerse\files\demo.mp4",
-        source_language="zh",
-        target_language="en",
-        dubbing=False,
-    ))
