@@ -10,6 +10,10 @@ import string
 import warnings
 from typing import List
 
+# 抑制 jieba 导入时的 pkg_resources 弃用警告
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 import jieba
 import pandas as pd
 
@@ -17,8 +21,6 @@ from loguru import logger
 
 from src.utils.common import get_joiner, settings
 from src.utils.paths import SPLIT_BY_NLP
-
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 # --------------------
 # 中文停用词和连接词
