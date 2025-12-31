@@ -10,10 +10,9 @@ VideoVerse - AI 视频翻译和配音工具
 3. 精确匹配：使用 message/module 参数精确定位警告，避免过度抑制
 """
 import os
-import sys
 import warnings
-from io import StringIO
 from contextlib import redirect_stdout
+from io import StringIO
 
 # =============================================================================
 # 环境变量配置
@@ -22,7 +21,6 @@ from contextlib import redirect_stdout
 # 必须在导入任何 torch/torchaudio 相关模块之前设置
 # 解决 TorchAudio 2.1+ 的 backend dispatcher 弃用警告
 os.environ["TORCHAUDIO_USE_BACKEND_DISPATCHER"] = "1"
-
 
 # =============================================================================
 # 警告过滤集中管理
@@ -67,7 +65,6 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", module="whisperx.*")
 warnings.filterwarnings("ignore", module="faster_whisper.*")
 
-
 # =============================================================================
 # 特殊库预初始化（必须在所有子模块导入前执行）
 # =============================================================================
@@ -81,6 +78,7 @@ warnings.filterwarnings("ignore", module="faster_whisper.*")
 # 注意：必须尽早执行，确保在其他任何模块导入 jieba 之前完成
 try:
     import jieba
+
     with redirect_stdout(StringIO()):
         jieba.lcut("初始化")
 except ImportError:
