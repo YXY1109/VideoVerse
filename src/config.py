@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     max_split_length: int = Field(default=20, validation_alias="MAX_SPLIT_LENGTH")
     summary_length: int = Field(default=8000, validation_alias="SUMMARY_LENGTH")
     reflect_translate: bool = Field(default=False, validation_alias="REFLECT_TRANSLATE")
-    model_cache_dir: str = Field(default="_model_cache", validation_alias="MODEL_CACHE_DIR")
+    model_cache_dir: str = Field(default="model_cache", validation_alias="MODEL_CACHE_DIR")
     pause_before_translate: bool = Field(default=False, validation_alias="PAUSE_BEFORE_TRANSLATE")
 
     # ==================== 常量配置 ====================
