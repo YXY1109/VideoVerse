@@ -37,6 +37,22 @@ def pytest_configure(config):
     # 确保禁用 .env 文件加载（双重保险）
     os.environ["DOTENV_DISABLED"] = "1"
 
+    # 设置 TorchAudio 后端调度器（消除 Demucs 警告）
+    os.environ["TORCHAUDIO_USE_BACKEND_DISPATCHER"] = "1"
+
+    # 过滤 TorchAudio 全局 backend 废弃警告
+    import warnings
+    warnings.filterwarnings("ignore", message=".*TorchAudio.*global backend.*", category=UserWarning)
+    warnings.filterwarnings("ignore", message=".*torchaudio.*backend.*", category=UserWarning)
+    warnings.filterwarnings("ignore", module="demucs.*", category=UserWarning)
+
+    # 注册 pytest 标记
+    config.addinivalue_line("markers", "asyncio: mark test as an async test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "unit: mark test as unit test")
+    config.addinivalue_line("markers", "skip_ci: skip test in CI environment")
+
 
 # ==================== 自动清理环境变量 ====================
 
@@ -505,21 +521,4 @@ This is a test
 
 
 # ==================== Pytest 配置 ====================
-
-def pytest_configure(config):
-    """Pytest 配置钩子"""
-    config.addinivalue_line(
-        "markers", "asyncio: mark test as an async test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
-    config.addinivalue_line(
-        "markers", "skip_ci: skip test in CI environment"
-    )
+# 标记定义已移至第一个 pytest_configure 函数中（避免重复）

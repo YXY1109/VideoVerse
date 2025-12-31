@@ -4,15 +4,17 @@ VideoVerse 配置管理
 使用 pydantic-settings 从环境变量加载配置
 """
 import os
-from typing import List, Any
+from pathlib import Path
+from typing import List
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic_settings.sources import EnvSettingsSource
-
 
 # 检查是否在测试环境中
 _IS_TEST_ENV = os.getenv("DOTENV_DISABLED") is not None
+
+# 获取项目根目录（从当前文件向上查找）
+_PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 
 
 class Settings(BaseSettings):
@@ -29,6 +31,9 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         # 在测试环境中，清除传入的环境变量相关的 kwargs 优先级
         super().__init__(**kwargs)
+        # 如果 model_cache_dir 是相对路径，转换为绝对路径（相对于项目根目录）
+        if not os.path.isabs(self.model_cache_dir):
+            self.model_cache_dir = str(_PROJECT_ROOT / self.model_cache_dir)
 
     # ==================== API 配置 ====================
     openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
