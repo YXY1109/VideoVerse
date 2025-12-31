@@ -147,10 +147,34 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
     else:
         logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
 
+    # 设置 HuggingFace 缓存目录
+    os.environ['HF_HUB_CACHE'] = MODEL_DIR
+
     vad_options = {"vad_onset": 0.500, "vad_offset": 0.363}
     asr_options = {"temperatures": [0], "initial_prompt": "", }
     whisper_language = None if 'auto' in WHISPER_LANGUAGE else WHISPER_LANGUAGE
     logger.debug("You can ignore warning of `Model was trained with torch 1.10.0+cu102, yours is 2.0.0+cu118...`")
+
+    # 确保模型缓存目录存在
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
+    # 如果使用 HuggingFace 模型名称（非本地路径），尝试预下载
+    if '/' in model_name and not os.path.exists(model_name):
+        logger.info(f"Pre-downloading model {model_name} from {hf_endpoint}...")
+        try:
+            from huggingface_hub import snapshot_download
+            snapshot_download(
+                repo_id=model_name,
+                cache_dir=MODEL_DIR,
+                endpoint=hf_endpoint,
+                resume_download=True,
+                local_files_only=False
+            )
+            logger.info(f"Model {model_name} downloaded successfully")
+        except Exception as e:
+            logger.warning(f"Failed to pre-download model: {e}")
+            logger.info("Will try to load model directly (may fail if not cached)")
+
     model = whisperx.load_model(model_name, device, compute_type=compute_type, language=whisper_language,
                                 vad_options=vad_options, asr_options=asr_options, download_root=MODEL_DIR)
 
