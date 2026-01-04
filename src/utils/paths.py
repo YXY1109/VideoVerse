@@ -46,6 +46,7 @@ INPUT_VIDEO_FILE = OUTPUT_DIR / "input_video.mp4"
 OUTPUT_VIDEO_WITH_SUB = OUTPUT_DIR / "output_with_subtitles.mp4"
 OUTPUT_VIDEO_DUBBED = OUTPUT_DIR / "output_dubbed.mp4"
 
+
 # ==================== 辅助函数 ====================
 def ensure_directories() -> None:
     """确保所有必要的目录存在"""

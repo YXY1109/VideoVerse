@@ -7,24 +7,23 @@ import asyncio
 import os
 import subprocess
 import sys
-from pathlib import Path
 from typing import Dict, List, Tuple
+
 import pandas as pd
+from loguru import logger
 from pydub import AudioSegment
 from pydub.silence import detect_silence
 from pydub.utils import mediainfo
 
 from src.config import get_settings
+from src.utils.decorators import async_check_file_exists
 from src.utils.paths import (
-    OUTPUT_DIR,
     AUDIO_DIR,
     RAW_AUDIO_FILE,
     VOCAL_AUDIO_FILE,
     CLEANED_CHUNKS,
 )
-from src.utils.decorators import async_check_file_exists
 
-from loguru import logger
 settings = get_settings()
 
 
@@ -42,7 +41,7 @@ def convert_video_to_audio_sync(video_file: str, output_path: str = RAW_AUDIO_FI
     """同步转换视频为音频（支持缓存）"""
     os.makedirs(AUDIO_DIR, exist_ok=True)
     if os.path.exists(output_path):
-        logger.info(f"Skipping audio conversion, file exists: {output_path}")
+        logger.warning(f"Skipping audio conversion, file exists: {output_path}")
         return
     logger.info(f"Converting video to audio: {video_file} -> {output_path}")
     subprocess.run([
@@ -197,23 +196,21 @@ def save_results_sync(df: pd.DataFrame, output_path: str = CLEANED_CHUNKS) -> No
 async def demucs_audio(input_audio: str, output_audio: str) -> None:
     """异步人声分离（Demucs，支持缓存）"""
     # 检查输出文件是否已存在
-    if os.path.exists(output_audio):
-        logger.info(f"Skipping Demucs vocal separation, file exists: {output_audio}")
+    if os.path.exists(VOCAL_AUDIO_FILE):
+        logger.info(f"Skipping Demucs vocal separation, file exists: {VOCAL_AUDIO_FILE}")
         return
 
-    logger.info(f"Demucs vocal separation: {input_audio} -> {output_audio}")
+    logger.info(f"Demucs vocal separation: {input_audio} -> {VOCAL_AUDIO_FILE}")
 
-    # 获取当前 Python 解释器路径
     python_exe = sys.executable
+    demucs_output_dir = AUDIO_DIR / "htdemucs"
+    demucs_vocals = demucs_output_dir / "vocals.mp3"
 
-    # 获取输入文件名（不含扩展名）
-    input_name = Path(input_audio).stem
+    # 清理旧的 Demucs 输出目录
+    if demucs_output_dir.exists():
+        await asyncio.to_thread(lambda: subprocess.run(['cmd', '/c', 'rmdir', '/s', '/q', str(demucs_output_dir)], shell=True))
 
-    # Demucs 输出路径: {AUDIO_DIR}/htdemucs/{input_name}/vocals.mp3
-    demucs_out_dir = AUDIO_DIR / "htdemucs" / input_name
-    vocals_file = demucs_out_dir / "vocals.mp3"
-
-    # 使用 --two-stems vocals 只分离人声，--mp3 输出 mp3 格式
+    # 运行 Demucs
     await asyncio.to_thread(
         lambda: subprocess.run([
             python_exe, '-m', 'demucs.separate',
@@ -225,24 +222,26 @@ async def demucs_audio(input_audio: str, output_audio: str) -> None:
         ], check=True)
     )
 
-    # 移动文件到目标位置
-    if vocals_file.exists():
-        import shutil
-        shutil.move(str(vocals_file), str(output_audio))
-        # 清理 demucs 输出目录
-        if demucs_out_dir.exists():
-            shutil.rmtree(demucs_out_dir.parent, ignore_errors=True)
-        logger.info(f"Moved {vocals_file} to {output_audio}")
-    else:
-        raise FileNotFoundError(f"Demucs output not found: {vocals_file}")
+    # 验证输出文件
+    if not demucs_vocals.exists():
+        raise FileNotFoundError(f"Demucs output not found: {demucs_vocals}")
+
+    # 移动到目标位置
+    await asyncio.to_thread(lambda: demucs_vocals.rename(VOCAL_AUDIO_FILE))
+
+    # 清理 Demucs 输出目录
+    if demucs_output_dir.exists():
+        await asyncio.to_thread(lambda: subprocess.run(['cmd', '/c', 'rmdir', '/s', '/q', str(demucs_output_dir)], shell=True))
+
+    logger.info(f"Demucs complete: {VOCAL_AUDIO_FILE}")
 
 
 async def transcribe_audio(
-    audio_file: str,
-    vocal_audio: str,
-    start: float,
-    end: float,
-    runtime: str
+        audio_file: str,
+        vocal_audio: str,
+        start: float,
+        end: float,
+        runtime: str
 ) -> Dict:
     """异步转录音频片段"""
     # 根据 runtime 选择不同的 ASR 后端
@@ -274,7 +273,7 @@ async def step_02_asr(video_path: str, source_language: str = "en") -> str:
     logger.info(f"Starting ASR for video: {video_path}")
 
     # 1. 转换视频为音频
-    await asyncio.to_thread(convert_video_to_audio_sync, video_path)
+    convert_video_to_audio_sync(video_path)
 
     # 2. Demucs 人声分离
     if settings.demucs:
@@ -316,6 +315,7 @@ async def step_02_asr(video_path: str, source_language: str = "en") -> str:
 if __name__ == '__main__':
     # 测试
     import asyncio
+
     video_path = "output/test_video.mp4"
     result = asyncio.run(step_02_asr(video_path))
     logger.info(f"ASR result: {result}")

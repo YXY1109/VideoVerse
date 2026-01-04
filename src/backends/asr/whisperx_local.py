@@ -8,11 +8,10 @@ import librosa
 import torch
 import whisperx
 from huggingface_hub import snapshot_download
+from loguru import logger
 
 from src.config import get_settings
 from src.utils.paths import LOG_DIR
-
-from loguru import logger
 
 settings = get_settings()
 
@@ -120,63 +119,44 @@ def transcribe_audio_impl(raw_audio_file, vocal_audio_file, start, end):
         logger.info(f"Batch size: {batch_size}, Compute type: {compute_type}")
     logger.info(f"Starting WhisperX for segment {start:.2f}s to {end:.2f}s")
 
-    # 中文使用专用的标点优化模型
-    if WHISPER_LANGUAGE == 'zh':
-        model_name = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper"
-        # HuggingFace 缓存目录格式
-        local_model = os.path.join(MODEL_DIR, "models--Huan69--Belle-whisper-large-v3-zh-punct-fasterwhisper")
-    else:
-        model_name = settings.whisper_model
-        local_model = os.path.join(MODEL_DIR, f"models--{model_name.replace('/', '--')}")
-
-    if os.path.exists(local_model):
-        # HuggingFace 缓存格式：需要找到实际的 snapshots 目录
-        snapshots_dir = os.path.join(local_model, "snapshots")
-        if os.path.exists(snapshots_dir):
-            # 获取 snapshots 子目录（只有一个）
-            snapshot_subdirs = [d for d in os.listdir(snapshots_dir) if os.path.isdir(os.path.join(snapshots_dir, d))]
-            if snapshot_subdirs:
-                actual_model_dir = os.path.join(snapshots_dir, snapshot_subdirs[0])
-                logger.info(f"Loading local WHISPER model: {actual_model_dir}")
-                model_name = actual_model_dir
-            else:
-                logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
-        else:
-            logger.info(f"Loading local WHISPER model: {local_model}")
-            model_name = local_model
-    else:
-        logger.info(f"Using WHISPER model from HuggingFace: {model_name}")
+    # 确定模型名称（中文使用专用标点优化模型）
+    model_id = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper" if WHISPER_LANGUAGE == 'zh' else settings.whisper_model
 
     # 设置 HuggingFace 缓存目录
     os.environ['HF_HUB_CACHE'] = MODEL_DIR
+
+    # 统一处理模型路径：尝试从缓存获取，或预下载获取本地路径
+    def resolve_model_path(model_id: str, cache_dir: str, endpoint: str) -> str:
+        """解析模型为本地路径（优先使用缓存，否则预下载）"""
+
+        # 1. 尝试从 HuggingFace 缓存获取
+        cache_base = os.path.join(cache_dir, f"models--{model_id.replace('/', '--')}", "snapshots")
+        if os.path.exists(cache_base):
+            snapshot_subdirs = [d for d in os.listdir(cache_base) if os.path.isdir(os.path.join(cache_base, d))]
+            if snapshot_subdirs:
+                local_path = os.path.join(cache_base, snapshot_subdirs[0])
+                logger.info(f"Loading cached model: {local_path}")
+                return local_path
+
+        # 2. 模型未缓存，使用 snapshot_download 预下载并返回本地路径
+        logger.info(f"Pre-downloading model {model_id} from {endpoint}...")
+        local_path = snapshot_download(
+            repo_id=model_id,
+            cache_dir=cache_dir,
+            endpoint=endpoint,
+            resume_download=True,
+            local_files_only=False
+        )
+        logger.info(f"Model ready: {local_path}")
+        return local_path
+
+    # 解析模型为本地路径（whisperx.load_model 支持本地路径，可避免重复下载）
+    model_name = resolve_model_path(model_id, MODEL_DIR, hf_endpoint)
 
     vad_options = {"vad_onset": 0.500, "vad_offset": 0.363}
     asr_options = {"temperatures": [0], "initial_prompt": "", }
     whisper_language = None if 'auto' in WHISPER_LANGUAGE else WHISPER_LANGUAGE
     logger.debug("You can ignore warning of `Model was trained with torch 1.10.0+cu102, yours is 2.0.0+cu118...`")
-
-    # 确保模型缓存目录存在
-    os.makedirs(MODEL_DIR, exist_ok=True)
-
-    # 如果使用 HuggingFace 模型名称（非本地路径），尝试预下载并获取本地路径
-    original_model_name = model_name
-    if '/' in model_name and not os.path.exists(model_name):
-        logger.info(f"Pre-downloading model {model_name} from {hf_endpoint}...")
-        try:
-            from huggingface_hub import snapshot_download
-            local_path = snapshot_download(
-                repo_id=model_name,
-                cache_dir=MODEL_DIR,
-                endpoint=hf_endpoint,
-                resume_download=True,
-                local_files_only=False
-            )
-            logger.info(f"Model {model_name} downloaded successfully to: {local_path}")
-            # 使用本地路径加载模型，避免 faster-whisper 再次尝试下载
-            model_name = local_path
-        except Exception as e:
-            logger.warning(f"Failed to pre-download model: {e}")
-            logger.info("Will try to load model directly (may fail if not cached)")
 
     model = whisperx.load_model(model_name, device, compute_type=compute_type, language=whisper_language,
                                 vad_options=vad_options, asr_options=asr_options, download_root=MODEL_DIR)
