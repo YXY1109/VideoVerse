@@ -33,7 +33,7 @@ def normalize_audio_volume(audio_path: str, output_path: str, target_db: float =
     change_in_dBFS = target_db - audio.dBFS
     normalized_audio = audio.apply_gain(change_in_dBFS)
     normalized_audio.export(output_path, format=format)
-    logger.info(f"Audio normalized from {audio.dBFS:.1f}dB to {target_db:.1f}dB")
+    logger.success(f"Audio normalized from {audio.dBFS:.1f}dB to {target_db:.1f}dB")
     return output_path
 
 
@@ -51,7 +51,7 @@ def convert_video_to_audio_sync(video_file: str, output_path: str = RAW_AUDIO_FI
         '-ac', '1',
         '-metadata', 'encoding=UTF-8', str(output_path)
     ], check=True, stderr=subprocess.PIPE)
-    logger.info(f"Audio conversion complete: {output_path}")
+    logger.success(f"Audio conversion completed: {output_path}")
 
 
 def split_audio_sync(audio_file: str, target_len: float = 30 * 60, win: float = 60) -> List[Tuple[float, float]]:
@@ -90,7 +90,7 @@ def split_audio_sync(audio_file: str, target_len: float = 30 * 60, win: float = 
         segments.append((pos, split_at))
         pos = split_at
 
-    logger.info(f"Audio split into {len(segments)} segments")
+    logger.success(f"Audio split into {len(segments)} segments")
     return segments
 
 
@@ -196,21 +196,15 @@ def save_results_sync(df: pd.DataFrame, output_path: str = CLEANED_CHUNKS) -> No
 async def demucs_audio(input_audio: str, output_audio: str) -> None:
     """异步人声分离（Demucs，支持缓存）"""
     # 检查输出文件是否已存在
-    if os.path.exists(VOCAL_AUDIO_FILE):
-        logger.info(f"Skipping Demucs vocal separation, file exists: {VOCAL_AUDIO_FILE}")
+    if os.path.exists(output_audio):
+        logger.warning(f"Skipping Demucs vocal separation, file exists: {output_audio}")
         return
 
-    logger.info(f"Demucs vocal separation: {input_audio} -> {VOCAL_AUDIO_FILE}")
+    logger.info(f"Demucs vocal separation: {input_audio} -> {output_audio}")
 
     python_exe = sys.executable
-    demucs_output_dir = AUDIO_DIR / "htdemucs"
-    demucs_vocals = demucs_output_dir / "vocals.mp3"
 
-    # 清理旧的 Demucs 输出目录
-    if demucs_output_dir.exists():
-        await asyncio.to_thread(lambda: subprocess.run(['cmd', '/c', 'rmdir', '/s', '/q', str(demucs_output_dir)], shell=True))
-
-    # 运行 Demucs
+    # 运行 Demucs（使用 -o 参数直接输出到目标文件）
     await asyncio.to_thread(
         lambda: subprocess.run([
             python_exe, '-m', 'demucs.separate',
@@ -222,18 +216,26 @@ async def demucs_audio(input_audio: str, output_audio: str) -> None:
         ], check=True)
     )
 
+    # Demucs 输出路径
+    input_name = os.path.splitext(os.path.basename(input_audio))[0]
+    demucs_vocals = AUDIO_DIR / "htdemucs" / input_name / "vocals.mp3"
+
     # 验证输出文件
     if not demucs_vocals.exists():
         raise FileNotFoundError(f"Demucs output not found: {demucs_vocals}")
 
+    # 确保目标目录存在
+    os.makedirs(os.path.dirname(output_audio), exist_ok=True)
+
     # 移动到目标位置
-    await asyncio.to_thread(lambda: demucs_vocals.rename(VOCAL_AUDIO_FILE))
+    await asyncio.to_thread(lambda: demucs_vocals.rename(output_audio))
 
     # 清理 Demucs 输出目录
+    demucs_output_dir = AUDIO_DIR / "htdemucs" / input_name
     if demucs_output_dir.exists():
         await asyncio.to_thread(lambda: subprocess.run(['cmd', '/c', 'rmdir', '/s', '/q', str(demucs_output_dir)], shell=True))
 
-    logger.info(f"Demucs complete: {VOCAL_AUDIO_FILE}")
+    logger.info(f"Demucs complete: {output_audio}")
 
 
 async def transcribe_audio(
