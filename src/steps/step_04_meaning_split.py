@@ -157,15 +157,13 @@ async def split_sentence(sentence: str, num_parts: int, word_limit: int = 20, in
         return sentence
 
     # split the sentence based on the split points
-    for i, split_point in enumerate(split_points):
-        if i == 0:
-            best_split = sentence[:split_point] + '\n' + sentence[split_point:]
-        else:
-            parts = best_split.split('\n')
-            last_part = parts[-1]
-            parts[-1] = last_part[:split_point - split_points[i - 1]] + '\n' + last_part[
-                split_point - split_points[i - 1]:]
-            best_split = '\n'.join(parts)
+    parts = []
+    start = 0
+    for split_point in split_points:
+        parts.append(sentence[start:split_point])
+        start = split_point
+    parts.append(sentence[start:])  # 添加最后一部分
+    best_split = '\n'.join(parts)
 
     if index != -1:
         logger.info(f'Sentence {index} has been successfully split into {len(split_points) + 1} parts')
