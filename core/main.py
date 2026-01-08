@@ -1,6 +1,7 @@
 from core.asr.demucs_local import demucs_audio
 from core.asr.ffmpeg_local import ffmpeg_video_to_audio
 from core.asr.pydub_local import normalize_audio_volume, split_audio
+from core.asr.whisperx_local import transcribe_audio
 
 DEFAULT_VIDEO_SOURCE = r"D:\PycharmProjects\VideoVerse\files\demo.mp4"
 DEFAULT_SOURCE_LANGUAGE = "zh"
