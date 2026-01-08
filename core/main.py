@@ -1,5 +1,6 @@
-from core.asr.demucs_local import demucs_audio, normalize_audio_volume
+from core.asr.demucs_local import demucs_audio
 from core.asr.ffmpeg_local import ffmpeg_video_to_audio
+from core.asr.pydub_local import normalize_audio_volume, split_audio
 
 DEFAULT_VIDEO_SOURCE = r"D:\PycharmProjects\VideoVerse\files\demo.mp4"
 DEFAULT_SOURCE_LANGUAGE = "zh"
@@ -22,4 +23,13 @@ else:
     vocal_audio = mp3_path
 
 # 2.3 标准化音频音量
-vocal_audio = normalize_audio_volume(vocal_audio)
+vocal_normalized_audio = normalize_audio_volume(vocal_audio)
+
+# 2.4 分割音频
+segments = split_audio(vocal_normalized_audio)
+
+# 2.5 转录
+all_results = []
+for start, end in segments:
+    result = transcribe_audio(vocal_normalized_audio, vocal_audio, start, end)
+    all_results.append(result)
