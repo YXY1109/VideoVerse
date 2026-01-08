@@ -12,6 +12,10 @@ def convert_video_to_audio(video_file: str) -> str:
     os.makedirs(output_dir, exist_ok=True)
     # 将 mp3 保存在该目录下
     audio_path = os.path.join(output_dir, video_name + '.mp3')
+    # 如果音频文件已存在，直接返回
+    if os.path.exists(audio_path):
+        logger.warning(f"Audio file already exists: {audio_path}")
+        return audio_path
     logger.info(f"Converting video to audio: {video_file} -> {audio_path}")
     subprocess.run([
         'ffmpeg', '-y', '-i', video_file, '-vn',

@@ -17,20 +17,21 @@ def demucs_audio(input_audio: str) -> str:
     # 保存人声路径
     output_path = os.path.join(audio_dir, vocals_audio_name)
 
+    if os.path.exists(output_path):
+        logger.warning(f"Demucs already exists:{output_path}")
+        return output_path
+
+    subprocess.run([
+        python_exe, '-m', 'demucs.separate',
+        '-n', 'htdemucs',
+        '--two-stems', 'vocals',
+        '--mp3',
+        '--out', str(audio_dir),
+        str(input_audio)
+    ], check=True)
     # 人声输出路径
     demucs_vocals_path = os.path.join(audio_dir, "htdemucs", audio_name, "vocals.mp3")
-    if os.path.exists(demucs_vocals_path):
-        logger.success(f"Demucs already exists:{demucs_vocals_path}")
-    else:
-        subprocess.run([
-            python_exe, '-m', 'demucs.separate',
-            '-n', 'htdemucs',
-            '--two-stems', 'vocals',
-            '--mp3',
-            '--out', str(audio_dir),
-            str(input_audio)
-        ], check=True)
-        logger.success(f"Demucs complete:{demucs_vocals_path}")
+    logger.success(f"Demucs complete:{demucs_vocals_path}")
     # 将demucs_vocals文件移动到output_path
     os.rename(demucs_vocals_path, output_path)
     return output_path
