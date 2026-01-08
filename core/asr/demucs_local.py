@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 from loguru import logger
+from pydub import AudioSegment
 
 
 def demucs_audio(input_audio: str) -> str:
@@ -16,11 +17,9 @@ def demucs_audio(input_audio: str) -> str:
     audio_dir = os.path.dirname(input_audio)
     # 保存人声路径
     output_path = os.path.join(audio_dir, vocals_audio_name)
-
     if os.path.exists(output_path):
         logger.warning(f"Demucs already exists:{output_path}")
         return output_path
-
     subprocess.run([
         python_exe, '-m', 'demucs.separate',
         '-n', 'htdemucs',
@@ -34,4 +33,20 @@ def demucs_audio(input_audio: str) -> str:
     logger.success(f"Demucs complete:{demucs_vocals_path}")
     # 将demucs_vocals文件移动到output_path
     os.rename(demucs_vocals_path, output_path)
+    return output_path
+
+
+def normalize_audio_volume(audio_path: str, target_db: float = -20.0) -> str:
+    """标准化音频音量"""
+    name, ext = os.path.splitext(audio_path)
+    output_path = name + "_normalized" + ext
+    if os.path.exists(output_path):
+        logger.warning(f"Normalized audio already exists: {output_path}")
+        return output_path
+
+    audio = AudioSegment.from_file(audio_path)
+    change_in_dbfs = target_db - audio.dBFS
+    normalized_audio = audio.apply_gain(change_in_dbfs)
+    normalized_audio.export(output_path, format=ext[1:])
+    logger.success(f"Audio normalized from {audio.dBFS:.1f}dB to {target_db:.1f}dB")
     return output_path

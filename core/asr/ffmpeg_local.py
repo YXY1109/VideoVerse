@@ -4,7 +4,7 @@ import subprocess
 from loguru import logger
 
 
-def convert_video_to_audio(video_file: str) -> str:
+def ffmpeg_video_to_audio(video_file: str) -> str:
     """视频提取音频文件"""
     video_name = os.path.splitext(os.path.basename(video_file))[0]
     # 在视频所在目录下创建同名目录
