@@ -222,3 +222,4 @@ __marimo__/
 /.streamlit/
 /files/demo.mp4
 /models/
+/core/asr/contants.py
