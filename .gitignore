@@ -221,4 +221,4 @@ __marimo__/
 /output/
 /.streamlit/
 /files/demo.mp4
-/model_cache/
+/models/
