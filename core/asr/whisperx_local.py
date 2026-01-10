@@ -1,13 +1,53 @@
-
+import os
+import time
 from pathlib import Path
 
-# import librosa
-# import torch
-import whisperx
 from loguru import logger
+
+
+def setup_huggingface_cache(cache_dir: str) -> None:
+    """设置 HuggingFace 缓存目录环境变量，确保模型直接存储在指定根目录下。
+    模型目录格式: {cache_dir}/models--{org}--{repo}/
+    """
+    cache_path = Path(cache_dir)
+    cache_path.mkdir(parents=True, exist_ok=True)
+    # 直接设置为根目录，模型将存储为: models/models--xxx--xxx/snapshots/...
+    os.environ["HUGGINGFACE_HUB_CACHE"] = str(cache_path)
+    os.environ["HF_HUB_CACHE"] = str(cache_path)
+    logger.info(f"HuggingFace cache directory set to: {cache_path}")
+    logger.info(f"Models will be stored as: {cache_path}/models--org--repo/snapshots/")
+
+
+model_cache_dir = r'D:\PycharmProjects\VideoVerse\models'
+
+# 在加载模型前设置 HuggingFace 缓存目录（必须在使用 whisperx 前调用）
+setup_huggingface_cache(model_cache_dir)
+
+import librosa
+import torch
+import whisperx
 from huggingface_hub import snapshot_download
 
+from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF
 
+from core.asr.contants import result1, result2
+
+
+# Fix encoding for Chinese text (faster-whisper bug)
+def fix_text_encoding(text: str) -> str:
+    """修复 faster-whisper 输出的乱码中文"""
+    if not text or any('\u4e00' <= c <= '\u9fff' for c in text):
+        return text
+
+    # 尝试常见的编码修复
+    for enc in ['latin-1', 'iso-8859-1', 'cp1252', 'gbk', 'gb2312']:
+        try:
+            fixed = text.encode(enc).decode('utf-8')
+            if any('\u4e00' <= c <= '\u9fff' for c in fixed):
+                return fixed
+        except:
+            continue
+    return text
 
 
 def ensure_model_exists(model_name: str, model_cache_dir: str) -> str:
@@ -73,6 +113,10 @@ def ensure_model_exists(model_name: str, model_cache_dir: str) -> str:
 def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     whisper_language = "zh"
     model_cache_dir = str(Path(__file__).parent.parent.parent / "models")
+
+    # 在加载模型前设置 HuggingFace 缓存目录
+    setup_huggingface_cache(model_cache_dir)
+
     model_name = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper" if whisper_language == 'zh' else "large-v3"
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -104,10 +148,56 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     raw_audio_segment = load_audio_segment(raw_audio_file, start, end)
     vocal_audio_segment = load_audio_segment(vocal_audio_file, start, end)
 
+    # 语音转文本，比较耗时
+    transcribe_start_time = time.time()
+    logger.info("Starting transcribe (you will see progress bar)...")
+    # result = model.transcribe(raw_audio_segment, batch_size=batch_size, print_progress=True)
+    result = result1
+    transcribe_time = time.time() - transcribe_start_time
+    logger.info(f"Transcribe time: {transcribe_time:.2f}s")
+
+    # Free GPU resources
+    del model
+    torch.cuda.empty_cache()
+
+    # 对齐
+    align_start_time = time.time()
+    # 预下载 alignment 模型（使用镜像）
+
+    # 确保模型已下载，并获取本地路径
+    model_name = DEFAULT_ALIGN_MODELS_HF.get(result["language"])
+    local_model_path = ensure_model_exists(model_name, model_cache_dir)
+    logger.success(f"对齐模型地址：{local_model_path}")
+    # Align timestamps using vocal audio
+    model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
+    # result = whisperx.align(result["segments"], model_a, metadata, vocal_audio_segment, device,
+    #                         return_char_alignments=False)
+    result = result2
+
+    align_time = time.time() - align_start_time
+    logger.info(f"Align time: {align_time:.2f}s")
+
+    # Free GPU resources again
+    torch.cuda.empty_cache()
+    del model_a
+
+    # Adjust timestamps and fix encoding
+    for segment in result['segments']:
+        segment['start'] += start
+        segment['end'] += start
+        for word in segment['words']:
+            if 'start' in word:
+                word['start'] += start
+            if 'end' in word:
+                word['end'] += start
+            # 修复单词文本的编码问题
+            if 'word' in word:
+                word['word'] = fix_text_encoding(word['word'])
+    return result
+
 
 if __name__ == '__main__':
-    whisper_language = "zh1"
-    model_cache_dir = str(Path(__file__).parent.parent.parent / "models")
-    model_name = "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper" if whisper_language == 'zh' else "large-v3"
-    model_path = ensure_model_exists(model_name, model_cache_dir)
-    print(f"Model path: {model_path}")
+    raw_audio_file = r'D:\\PycharmProjects\\VideoVerse\\files\\demo\\demo_vocals_normalized.mp3'
+    vocal_audio_file = r'D:\\PycharmProjects\\VideoVerse\\files\\demo\\demo_vocals.mp3'
+    result = transcribe_audio(raw_audio_file, vocal_audio_file, 0, 364.852245)
+    print(result)
