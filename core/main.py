@@ -1,3 +1,5 @@
+from loguru import logger
+
 from core.asr.common import process_transcription, save_results
 from core.asr.demucs_local import demucs_audio
 from core.asr.ffmpeg_local import ffmpeg_video_to_audio
