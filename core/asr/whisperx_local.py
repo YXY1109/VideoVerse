@@ -172,6 +172,8 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     return result
 
 
+
+
 if __name__ == '__main__':
     raw_audio_file = r'D:\\PycharmProjects\\VideoVerse\\files\\demo\\demo_vocals_normalized.mp3'
     vocal_audio_file = r'D:\\PycharmProjects\\VideoVerse\\files\\demo\\demo_vocals.mp3'
