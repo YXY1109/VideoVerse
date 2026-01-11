@@ -51,60 +51,36 @@ def fix_text_encoding(text: str) -> str:
 
 
 def ensure_model_exists(model_name: str, model_cache_dir: str) -> str:
-    """确保 WhisperX 模型已在缓存中，如果不存在则下载。
+    """确保模型已下载（如不存在则自动下载），返回模型路径。
 
     Args:
         model_name: 模型名称，如 "large-v3" 或 "Huan69/Belle-whisper-large-v3-zh-punct-fasterwhisper"
         model_cache_dir: 模型缓存目录路径
 
     Returns:
-        str: HuggingFace 返回 model_name，OpenAI 返回本地路径
+        str: HuggingFace 模型返回 model_name，OpenAI 模型返回本地路径
     """
     if "/" in model_name:
-        # HuggingFace 模型
-        org, repo = model_name.split("/", 1)
-        snapshot_path = Path(model_cache_dir) / f"models--{org}--{repo}" / "snapshots"
-        model_exists = snapshot_path.exists() and any(snapshot_path.iterdir())
-
-        if model_exists:
-            snapshot_dir = next(snapshot_path.iterdir())
-            logger.info(f"Found cached HuggingFace model at: {snapshot_dir}")
-        else:
-            # 模型不存在，使用 snapshot_download 下载
-            logger.info(f"Model '{model_name}' not found in cache, downloading...")
-            logger.info(f"Cache directory: {model_cache_dir}")
-
-            snapshot_download(
-                repo_id=model_name,
-                cache_dir=model_cache_dir,
-                resume_download=True,
-            )
-            logger.info(f"Model '{model_name}' downloaded successfully")
-        # 返回 model_name 让 whisperx.load_model 处理
+        # HuggingFace 模型：snapshot_download 自动处理缓存，无需手动检查
+        logger.info(f"Ensuring HuggingFace model '{model_name}' is available...")
+        snapshot_download(
+            repo_id=model_name,
+            cache_dir=model_cache_dir
+        )
         return model_name
     else:
         # OpenAI 模型 (如 large-v3)
-        # faster-whisper 存储格式: {model_cache_dir}/{model_name}/
         model_path = Path(model_cache_dir) / model_name
         required_files = ["config.json", "model.bin", "vocabulary.txt"]
 
-        # 检查所有必需文件是否存在
-        all_files_exist = all((model_path / f).exists() for f in required_files)
-
-        if all_files_exist:
+        if all((model_path / f).exists() for f in required_files):
             logger.info(f"Found cached OpenAI model at: {model_path}")
             return str(model_path)
 
-        # 模型不完整，需要下载
-        logger.info(f"OpenAI model '{model_name}' not found in cache, downloading...")
-        logger.info(f"Cache directory: {model_cache_dir}")
-
-        # 创建缓存目录
+        logger.info(f"Downloading OpenAI model '{model_name}'...")
         model_path.mkdir(parents=True, exist_ok=True)
 
-        # 使用 faster-whisper 的 download_model
         from faster_whisper import download_model
-
         download_path = download_model(model_name, output_dir=str(model_path))
         logger.info(f"Model downloaded to: {download_path}")
         return str(download_path)
