@@ -50,3 +50,6 @@ asr_output_path = r"D:\PycharmProjects\VideoVerse\files\demo\cleaned_chunks.xlsx
 save_results(df, asr_output_path)
 
 logger.success(f"asr处理完成：{asr_output_path}")
+
+#  三：NLP
+nlp_split = nlp_split(asr_result, source_language)
