@@ -5,8 +5,8 @@ from core.asr.demucs_local import demucs_audio
 from core.asr.ffmpeg_local import ffmpeg_video_to_audio
 from core.asr.pydub_local import normalize_audio_volume, split_audio
 from core.asr.whisperx_local import transcribe_audio
-from core.nlp.jieba_split import split_by_mark_jieba, split_by_comma_jieba, split_sentences_jieba_main, \
-    split_long_by_root_jieba_main
+from core.nlp.jieba_spacy_split import split_by_mark_jieba, split_by_comma_jieba, split_sentences_jieba_main, \
+    split_long_by_root_jieba_main, process_nlp_split
 
 DEFAULT_VIDEO_SOURCE = r"D:\PycharmProjects\VideoVerse\files\demo.mp4"
 DEFAULT_SOURCE_LANGUAGE = "zh"
@@ -54,16 +54,4 @@ df = save_results(df, asr_output_path)
 logger.success(f"asr处理完成：{asr_output_path}")
 
 #  三：NLP
-if DEFAULT_SOURCE_LANGUAGE == "zh":
-    # 中文分词
-    result1 = split_by_mark_jieba(df, DEFAULT_SOURCE_LANGUAGE)
-    print(f"result1:{result1}")
-    result2 = split_by_comma_jieba(result1)
-    print(f"result2:{result2}")
-    result3 = split_sentences_jieba_main(result2)
-    print(f"result3:{result3}")
-    result4 = split_long_by_root_jieba_main(result3)
-    print(f"result4:{result4}")
-else:
-    # 其他语言分词
-    pass
+result_zh = process_nlp_split(df, DEFAULT_SOURCE_LANGUAGE)
