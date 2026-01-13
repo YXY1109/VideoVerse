@@ -2,6 +2,7 @@ from typing import Dict
 
 import pandas as pd
 from loguru import logger
+from pandas import DataFrame
 
 
 def process_transcription(result: Dict) -> pd.DataFrame:
@@ -83,7 +84,7 @@ def fix_mojibake_text(text: str) -> str:
     return text
 
 
-def save_results(df: pd.DataFrame, output_path: str) -> None:
+def save_results(df: pd.DataFrame, output_path: str) -> DataFrame:
     """同步保存结果"""
     initial_rows = len(df)
     df = df[df['text'].str.len() > 0]
@@ -99,3 +100,4 @@ def save_results(df: pd.DataFrame, output_path: str) -> None:
     df['text'] = df['text'].apply(lambda x: f'"{x}"')
     df.to_excel(output_path, index=False)
     logger.info(f"Results saved to {output_path}")
+    return df
