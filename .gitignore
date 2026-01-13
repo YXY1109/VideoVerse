@@ -224,3 +224,5 @@ __marimo__/
 /models/
 /core/asr/contants.py
 /files/demo/
+tmpclaude-*
+nul

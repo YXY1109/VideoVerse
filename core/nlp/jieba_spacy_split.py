@@ -611,70 +611,6 @@ def get_split_strategy(language: str) -> SplitStrategy:
         return SpacySplitStrategy(language)
 
 
-# ============ 兼容旧接口的函数 ============
-
-def split_by_mark(df: pd.DataFrame, language: str) -> List[str]:
-    """
-    按标点符号分割（统一接口）
-
-    Args:
-        df: 输入 DataFrame
-        language: 语言代码
-
-    Returns:
-        分割后的句子列表
-    """
-    strategy = get_split_strategy(language)
-    return strategy.split_by_mark(df, language)
-
-
-def split_by_comma(sentences: List[str], language: str) -> List[str]:
-    """
-    按逗号分割（统一接口）
-
-    Args:
-        sentences: 输入句子列表
-        language: 语言代码
-
-    Returns:
-        分割后的句子列表
-    """
-    strategy = get_split_strategy(language)
-    return strategy.split_by_comma(sentences)
-
-
-def split_by_connectors(sentences: List[str], language: str) -> List[str]:
-    """
-    按连接词分割（统一接口）
-
-    Args:
-        sentences: 输入句子列表
-        language: 语言代码
-
-    Returns:
-        分割后的句子列表
-    """
-    strategy = get_split_strategy(language)
-    return strategy.split_by_connectors(sentences)
-
-
-def split_long_sentences(sentences: List[str], language: str, max_tokens: int = 60) -> List[str]:
-    """
-    分割长句子（统一接口）
-
-    Args:
-        sentences: 输入句子列表
-        language: 语言代码
-        max_tokens: 最大 token 数
-
-    Returns:
-        分割后的句子列表
-    """
-    strategy = get_split_strategy(language)
-    return strategy.split_long_sentences(sentences, max_tokens)
-
-
-# ============ 主函数 ============
 
 def process_nlp_split(df: pd.DataFrame, language: str) -> List[str]:
     """
@@ -692,29 +628,41 @@ def process_nlp_split(df: pd.DataFrame, language: str) -> List[str]:
         >>> df = pd.read_excel("cleaned_chunks.xlsx")
         >>> result = process_nlp_split(df, "zh")
     """
+    strategy = get_split_strategy(language)
+
     # Step 1: 按标点分割
-    result = split_by_mark(df, language)
+    result = strategy.split_by_mark(df, language)
     logger.info(f"Step 1 - Split by mark: {len(result)} sentences")
 
     # Step 2: 按逗号分割
-    result = split_by_comma(result, language)
+    result = strategy.split_by_comma(result)
     logger.info(f"Step 2 - Split by comma: {len(result)} sentences")
 
     # Step 3: 按连接词分割
-    result = split_by_connectors(result, language)
+    result = strategy.split_by_connectors(result)
     logger.info(f"Step 3 - Split by connectors: {len(result)} sentences")
 
     # Step 4: 分割长句子
-    result = split_long_sentences(result, language, max_tokens=60)
+    result = strategy.split_long_sentences(result, max_tokens=60)
     logger.info(f"Step 4 - Split long sentences: {len(result)} sentences")
 
     return result
 
 
 if __name__ == '__main__':
-    # 测试中文
-    df_zh = pd.read_excel(r"D:\PycharmProjects\VideoVerse\files\demo\cleaned_chunks.xlsx")
-    result_zh = process_nlp_split(df_zh, 'zh')
-    print(f"中文分割结果: {len(result_zh)} 个句子")
-    for i, sent in enumerate(result_zh[:5], 1):
+    import sys
+
+    # 测试用法：python jieba_spacy_split.py <file_path> <language>
+    if len(sys.argv) >= 3:
+        file_path = sys.argv[1]
+        language = sys.argv[2]
+    else:
+        print("Usage: python jieba_spacy_split.py <file_path> <language>")
+        print("Example: python jieba_spacy_split.py cleaned_chunks.xlsx zh")
+        sys.exit(1)
+
+    df = pd.read_excel(file_path)
+    result = process_nlp_split(df, language)
+    print(f"分割结果 ({language}): {len(result)} 个句子")
+    for i, sent in enumerate(result[:5], 1):
         print(f"{i}. {sent}")
