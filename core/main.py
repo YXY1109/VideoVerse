@@ -6,6 +6,7 @@ from core.asr.ffmpeg_local import ffmpeg_video_to_audio
 from core.asr.pydub_local import normalize_audio_volume, split_audio
 from core.asr.whisperx_local import transcribe_audio
 from core.nlp.jieba_spacy_split import process_nlp_split
+from core.nlp.meaning_split import process_meaning_split
 
 DEFAULT_VIDEO_SOURCE = r"D:\PycharmProjects\VideoVerse\files\demo.mp4"
 DEFAULT_SOURCE_LANGUAGE = "zh"
@@ -52,6 +53,9 @@ df = save_results(df, asr_output_path)
 
 logger.success(f"asr处理完成：{asr_output_path}")
 
-#  三：NLP
+# 三：NLP
 result_zh = process_nlp_split(df, DEFAULT_SOURCE_LANGUAGE)
 logger.success(f"nlp处理完成：{result_zh}")
+
+# 四：语义分割 待验证
+mean_list=process_meaning_split(result_zh, DEFAULT_TARGET_LANGUAGE)
