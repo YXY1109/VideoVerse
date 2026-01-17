@@ -30,7 +30,6 @@ from huggingface_hub import snapshot_download
 
 from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF
 
-from core.asr.contants import result1, result2
 
 
 # Fix encoding for Chinese text (faster-whisper bug)
@@ -127,8 +126,7 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     # 语音转文本，比较耗时
     transcribe_start_time = time.time()
     logger.info("Starting transcribe (you will see progress bar)...")
-    # result = model.transcribe(raw_audio_segment, batch_size=batch_size, print_progress=True)
-    result = result1
+    result = model.transcribe(raw_audio_segment, batch_size=batch_size, print_progress=True)
     transcribe_time = time.time() - transcribe_start_time
     logger.info(f"Transcribe time: {transcribe_time:.2f}s")
 
@@ -146,9 +144,8 @@ def transcribe_audio(raw_audio_file, vocal_audio_file, start, end):
     logger.success(f"对齐模型地址：{local_model_path}")
     # Align timestamps using vocal audio
     model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
-    # result = whisperx.align(result["segments"], model_a, metadata, vocal_audio_segment, device,
-    #                         return_char_alignments=False)
-    result = result2
+    result = whisperx.align(result["segments"], model_a, metadata, vocal_audio_segment, device,
+                            return_char_alignments=False)
 
     align_time = time.time() - align_start_time
     logger.info(f"Align time: {align_time:.2f}s")

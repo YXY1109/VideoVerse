@@ -226,3 +226,5 @@ __marimo__/
 /files/demo/
 tmpclaude-*
 nul
+/temp/
+/pyproject_backup.toml

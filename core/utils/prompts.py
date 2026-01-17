@@ -1,20 +1,8 @@
 import json
 
-from src.config import get_settings
-
-settings = get_settings()
-
-# 辅助函数：模拟旧的 load_key 行为
+# 辅助函数
 def load_key(key: str):
-    """兼容旧的 load_key 调用"""
-    if key == "whisper.detected_language":
-        return settings.whisper_language  # 简化
-    elif key == "target_language":
-        return settings.target_language
-    elif key == "whisper.language":
-        return settings.whisper_language
-    # 添加更多映射...
-    return getattr(settings, key.replace(".", "_"), None)
+    return ""
 
 
 ## ================================================================

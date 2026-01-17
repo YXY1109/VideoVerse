@@ -1,37 +1,25 @@
-"""
-同步 LLM API 调用模块
-"""
-import json
 import json_repair
 from typing import Any, Optional
 from openai import OpenAI
 
-from src.config import get_settings
-from src.utils.cache import get_cache_manager
-from src.utils.decorators import async_except_handler
 
 from loguru import logger
 
-settings = get_settings()
+from core.utils.cache import get_cache_manager
+
 cache_manager = get_cache_manager()
 
 
-@async_except_handler("LLM request failed", max_retries=5)
 def ask_llm(
     prompt: str,
-    resp_type: Optional[str] = None,
     log_title: str = "default",
-    valid_def: Optional[callable] = None,
 ) -> Any:
     """
     同步调用 LLM API
 
     Args:
         prompt: 提示词
-        resp_type: 响应类型 ("json" 或其他)
         log_title: 日志标题（用于缓存键）
-        valid_def: 验证函数，用于验证响应格式
-
     Returns:
         LLM 响应结果
     """
@@ -40,7 +28,7 @@ def ask_llm(
         raise ValueError("OPENAI_API_KEY is not set")
 
     # 检查缓存
-    cached = cache_manager.get_llm_cache(prompt, resp_type or log_title)
+    cached = cache_manager.get_llm_cache(prompt,  log_title)
     if cached is not None:
         logger.info(f"Using cached LLM response for {log_title}")
         return cached
@@ -59,7 +47,7 @@ def ask_llm(
     )
 
     # 构建请求参数
-    response_format = {"type": "json_object"} if resp_type == "json" and settings.openai_llm_support_json else None
+    response_format = {"type": "json_object"} if settings.openai_llm_support_json else None
     messages = [{"role": "user", "content": prompt}]
 
     try:
@@ -75,19 +63,10 @@ def ask_llm(
 
     # 处理响应
     resp_content = response.choices[0].message.content
-    if resp_type == "json":
-        result = json_repair.loads(resp_content)
-    else:
-        result = resp_content
-
-    # 验证响应格式
-    if valid_def is not None:
-        validation_result = valid_def(result)
-        if validation_result.get("status") == "error":
-            raise ValueError(f"LLM response validation failed: {validation_result.get('message')}")
+    result = json_repair.loads(resp_content)
 
     # 保存缓存
-    cache_manager.set_llm_cache(prompt, result, resp_type or log_title)
+    cache_manager.set_llm_cache(prompt, result, log_title)
 
     return result
 
@@ -123,3 +102,7 @@ def ask_llm_batch(
     # 按原始顺序排序
     sorted_results = [r for _, r in sorted(results, key=lambda x: x[0])]
     return sorted_results
+
+
+if __name__ == '__main__':
+    response_data = ask_llm("你是谁", log_title='split_by_meaning')

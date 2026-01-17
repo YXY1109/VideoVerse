@@ -28,7 +28,7 @@ def process_meaning_split(sentences: list, source_language: str = "en") -> str:
     use_jieba = (source_language == 'zh')
 
     if use_jieba:
-        logger.info('Using jieba for Chinese tokenization in meaning split')
+        logger.warning('Using jieba for Chinese tokenization in meaning split')
         nlp=None
     else:
         nlp = load_spacy_model(source_language)
@@ -38,7 +38,8 @@ def process_meaning_split(sentences: list, source_language: str = "en") -> str:
         sentences,
         language=source_language,
         nlp=nlp,
-        use_jieba=use_jieba
+        use_jieba=use_jieba,
+        max_length=10
     )
 
     return  sentences

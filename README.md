@@ -283,7 +283,7 @@ WHISPER_MODEL=large-v3
 | `DEMUCS` | 是否人声分离 (`true`/`false`) | `true` |
 | `SUBTITLE_MAX_LENGTH` | 字幕最大字符数 | `75` |
 
-完整配置请参考 [`.env.example`](./.env.example) 文件。
+完整配置请参考 [`.env.example`](temp/.env.example) 文件。
 
 ## 🔌 Python API
 
