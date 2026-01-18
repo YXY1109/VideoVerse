@@ -5,6 +5,10 @@ description = "Videoverse - AI-powered video translation and dubbing tool (Async
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+    "torchaudio==2.7.1",
+    "demucs",
     "jieba>=0.42.1",
     "json-repair>=0.55.0",
     "librosa>=0.11.0",
@@ -30,6 +34,15 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv.sources]
+demucs = { path = "files/demucs-main", editable = true }
+
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cu118"]
+override-dependencies = [
+    "torchaudio==2.7.1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["common", "core", "configs", "examples", "scripts", "llm"]
