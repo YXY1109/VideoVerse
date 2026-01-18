@@ -18,6 +18,7 @@ dependencies = [
     "pydub>=0.25.1",
     "spacy>=3.8.11",
     "whisperx>=3.4.3",
+    "openpyxl>=3.1.5",
 ]
 
 

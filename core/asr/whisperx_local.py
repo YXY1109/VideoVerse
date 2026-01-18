@@ -4,6 +4,9 @@ from pathlib import Path
 
 from loguru import logger
 
+# weights_only bug https://github.com/m-bain/whisperX/issues/1304
+os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "true"
+
 
 def setup_huggingface_cache(cache_dir: str) -> None:
     """设置 HuggingFace 缓存目录环境变量，确保模型直接存储在指定根目录下。
