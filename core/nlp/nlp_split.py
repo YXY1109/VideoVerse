@@ -5,10 +5,8 @@ NLP 工具函数模块
 遵循 Python 最佳实践：类型提示、文档字符串、缓存。
 """
 
-import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 import jieba
 import pandas as pd
@@ -17,13 +15,9 @@ from loguru import logger
 from spacy.cli import download
 
 from core.nlp.nlp_constants import (
-    CHINESE_COMMA,
     CHINESE_CONNECTORS,
-    CHINESE_PUNCTUATION,
     SPACY_MODEL_MAP,
-    get_language_config,
     get_spacy_model,
-    is_chinese,
 )
 from core.utils.common import get_joiner
 
@@ -59,7 +53,7 @@ def load_spacy_model(language: str) -> spacy.Language:
     return nlp
 
 
-def load_chinese_stopwords(stopwords_path: Optional[str | Path] = None) -> set[str]:
+def load_chinese_stopwords(stopwords_path: str | Path | None = None) -> set[str]:
     """
     加载中文停用词表
 
@@ -84,19 +78,15 @@ def load_chinese_stopwords(stopwords_path: Optional[str | Path] = None) -> set[s
         raise FileNotFoundError(f"Chinese stopwords file not found: {stopwords_path}")
 
     try:
-        with open(stopwords_path, 'r', encoding='utf-8') as f:
+        with open(stopwords_path, encoding="utf-8") as f:
             stopwords = {line.strip() for line in f if line.strip()}
         logger.info(f"Loaded {len(stopwords)} Chinese stopwords from {stopwords_path}")
         return stopwords
     except Exception as e:
-        raise IOError(f"Failed to load Chinese stopwords from {stopwords_path}: {e}")
+        raise OSError(f"Failed to load Chinese stopwords from {stopwords_path}: {e}")
 
 
-def get_effective_words_jieba(
-    text: str,
-    stopwords: Optional[set[str]] = None,
-    remove_punct: bool = True
-) -> list[str]:
+def get_effective_words_jieba(text: str, stopwords: set[str] | None = None, remove_punct: bool = True) -> list[str]:
     """
     使用 jieba 分词并获取有效词（去除停用词和标点）
 
@@ -115,15 +105,12 @@ def get_effective_words_jieba(
 
     words = jieba.cut(text)
     effective_words = [
-        w for w in words
-        if w.strip()
-        and w not in stopwords
-        and (not remove_punct or w not in string.punctuation)
+        w for w in words if w.strip() and w not in stopwords and (not remove_punct or w not in string.punctuation)
     ]
     return effective_words
 
 
-def count_effective_words_jieba(text: str, stopwords: Optional[set[str]] = None) -> int:
+def count_effective_words_jieba(text: str, stopwords: set[str] | None = None) -> int:
     """
     计算中文文本的有效词数
 
@@ -137,11 +124,7 @@ def count_effective_words_jieba(text: str, stopwords: Optional[set[str]] = None)
     return len(get_effective_words_jieba(text, stopwords))
 
 
-def analyze_chinese_connector(
-    words: list[str],
-    connector_idx: int,
-    min_context_words: int = 5
-) -> bool:
+def analyze_chinese_connector(words: list[str], connector_idx: int, min_context_words: int = 5) -> bool:
     """
     分析中文连接词是否应该触发分割
 
@@ -161,10 +144,11 @@ def analyze_chinese_connector(
         return False
 
     # 检查前后词数
-    left_words = words[max(0, connector_idx - min_context_words):connector_idx]
-    right_words = words[connector_idx + 1:min(len(words), connector_idx + min_context_words + 1)]
+    left_words = words[max(0, connector_idx - min_context_words) : connector_idx]
+    right_words = words[connector_idx + 1 : min(len(words), connector_idx + min_context_words + 1)]
 
     import string
+
     left_words = [w for w in left_words if w.strip() and w not in string.punctuation]
     right_words = [w for w in right_words if w.strip() and w not in string.punctuation]
 
@@ -181,18 +165,12 @@ def is_valid_phrase_spacy(phrase: spacy.tokens.Span) -> bool:
     Returns:
         bool: 是否为有效短语
     """
-    has_subject = any(
-        token.dep_ in ["nsubj", "nsubjpass"] or token.pos_ == "PRON"
-        for token in phrase
-    )
+    has_subject = any(token.dep_ in ["nsubj", "nsubjpass"] or token.pos_ == "PRON" for token in phrase)
     has_verb = any(token.pos_ in ("VERB", "AUX") for token in phrase)
     return has_subject and has_verb
 
 
-def get_phrase_token_count(
-    phrase: spacy.tokens.Span,
-    include_punct: bool = False
-) -> int:
+def get_phrase_token_count(phrase: spacy.tokens.Span, include_punct: bool = False) -> int:
     """
     计算 Spacy 短语中的 token 数量
 
@@ -208,11 +186,7 @@ def get_phrase_token_count(
     return sum(1 for token in phrase if not token.is_punct)
 
 
-def split_text_by_punctuation(
-    text: str,
-    punctuation: tuple[str, ...],
-    joiner: str = " "
-) -> list[str]:
+def split_text_by_punctuation(text: str, punctuation: tuple[str, ...], joiner: str = " ") -> list[str]:
     """
     按标点符号分割文本
 
@@ -238,10 +212,7 @@ def split_text_by_punctuation(
     return sentences
 
 
-def prepare_dataframe(
-    df: pd.DataFrame,
-    language: str
-) -> tuple[pd.DataFrame, str]:
+def prepare_dataframe(df: pd.DataFrame, language: str) -> tuple[pd.DataFrame, str]:
     """
     准备用于 NLP 处理的 DataFrame
 
@@ -276,7 +247,7 @@ def merge_dataframe_text(df: pd.DataFrame, joiner: str) -> str:
     return joiner.join(df.text.to_list())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 测试代码
     from core.utils.common import get_joiner
 

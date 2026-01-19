@@ -8,7 +8,7 @@
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 import jieba
 import pandas as pd
@@ -39,22 +39,22 @@ class SplitStrategy(ABC):
     """文本分割策略抽象基类"""
 
     @abstractmethod
-    def split_by_mark(self, df: pd.DataFrame, language: str) -> List[str]:
+    def split_by_mark(self, df: pd.DataFrame, language: str) -> list[str]:
         """按标点符号分割"""
         pass
 
     @abstractmethod
-    def split_by_comma(self, sentences: List[str]) -> List[str]:
+    def split_by_comma(self, sentences: list[str]) -> list[str]:
         """按逗号分割"""
         pass
 
     @abstractmethod
-    def split_by_connectors(self, sentences: List[str]) -> List[str]:
+    def split_by_connectors(self, sentences: list[str]) -> list[str]:
         """按连接词分割"""
         pass
 
     @abstractmethod
-    def split_long_sentences(self, sentences: List[str], max_tokens: int) -> List[str]:
+    def split_long_sentences(self, sentences: list[str], max_tokens: int) -> list[str]:
         """分割长句子"""
         pass
 
@@ -63,7 +63,7 @@ class ChineseSplitStrategy(SplitStrategy):
     """中文文本分割策略（使用 jieba）"""
 
     def __init__(self):
-        self._stopwords: Optional[set[str]] = None
+        self._stopwords: set[str] | None = None
 
     @property
     def stopwords(self) -> set[str]:
@@ -76,7 +76,7 @@ class ChineseSplitStrategy(SplitStrategy):
                 self._stopwords = set()
         return self._stopwords
 
-    def split_by_mark(self, df: pd.DataFrame, language: str) -> List[str]:
+    def split_by_mark(self, df: pd.DataFrame, language: str) -> list[str]:
         """
         按标点符号分割中文文本
         处理连字符连接（...、-）
@@ -99,27 +99,27 @@ class ChineseSplitStrategy(SplitStrategy):
 
             # 检查是否需要合并（处理 ... 和 -）
             if current_sentence and (
-                    sent.startswith('-') or
-                    sent.startswith('...') or
-                    sent.startswith('…') or
-                    current_sentence[-1].endswith('-') or
-                    current_sentence[-1].endswith('...') or
-                    current_sentence[-1].endswith('…')
+                sent.startswith("-")
+                or sent.startswith("...")
+                or sent.startswith("…")
+                or current_sentence[-1].endswith("-")
+                or current_sentence[-1].endswith("...")
+                or current_sentence[-1].endswith("…")
             ):
                 current_sentence.append(sent)
             else:
                 if current_sentence:
-                    sentences_by_mark.append(''.join(current_sentence))
+                    sentences_by_mark.append("".join(current_sentence))
                     current_sentence = []
                 current_sentence.append(sent)
 
         if current_sentence:
-            sentences_by_mark.append(''.join(current_sentence))
+            sentences_by_mark.append("".join(current_sentence))
 
         # 合并仅包含标点的行到上一行
         result = []
         for i, sentence in enumerate(sentences_by_mark):
-            if i > 0 and sentence.strip() in [',', '.', '，', '。', '？', '！']:
+            if i > 0 and sentence.strip() in [",", ".", "，", "。", "？", "！"]:
                 result[-1] += sentence
             else:
                 result.append(sentence)
@@ -127,7 +127,7 @@ class ChineseSplitStrategy(SplitStrategy):
         logger.info(f"Split {len(result)} sentences by punctuation marks (jieba)")
         return result
 
-    def split_by_comma(self, sentences: List[str]) -> List[str]:
+    def split_by_comma(self, sentences: list[str]) -> list[str]:
         """
         按逗号分割中文句子
         检查左右是否构成完整句子（>=3 词）
@@ -164,10 +164,10 @@ class ChineseSplitStrategy(SplitStrategy):
 
                 i += 1
 
-        logger.info(f"Sentences split by commas (jieba)")
+        logger.info("Sentences split by commas (jieba)")
         return all_split_sentences
 
-    def split_by_connectors(self, sentences: List[str]) -> List[str]:
+    def split_by_connectors(self, sentences: list[str]) -> list[str]:
         """
         按连接词分割中文句子
         连接词：因为、所以、但是、而且等
@@ -178,10 +178,10 @@ class ChineseSplitStrategy(SplitStrategy):
             split_sentences = self._split_by_connectors_single(sentence.strip())
             all_split_sentences.extend(split_sentences)
 
-        logger.info(f"Sentences split by connectors (jieba)")
+        logger.info("Sentences split by connectors (jieba)")
         return all_split_sentences
 
-    def _split_by_connectors_single(self, text: str, context_words: int = 5) -> List[str]:
+    def _split_by_connectors_single(self, text: str, context_words: int = 5) -> list[str]:
         """单个句子的连接词分割"""
         words = list(jieba.cut(text))
         sentences = [text]
@@ -196,8 +196,8 @@ class ChineseSplitStrategy(SplitStrategy):
 
                 for i, word in enumerate(words):
                     if analyze_chinese_connector(words, i):
-                        left_text = ''.join(words[:i]).strip()
-                        right_text = ''.join(words[i:]).strip()
+                        left_text = "".join(words[:i]).strip()
+                        right_text = "".join(words[i:]).strip()
 
                         left_show = left_text[-context_words:] if len(left_text) > context_words else left_text
                         right_show = right_text[:context_words] if len(right_text) > context_words else right_text
@@ -217,7 +217,7 @@ class ChineseSplitStrategy(SplitStrategy):
 
         return sentences
 
-    def split_long_sentences(self, sentences: List[str], max_tokens: int = 60) -> List[str]:
+    def split_long_sentences(self, sentences: list[str], max_tokens: int = 60) -> list[str]:
         """
         分割超长中文句子
         使用贪心算法在合适位置分割（>60 token）
@@ -246,10 +246,10 @@ class ChineseSplitStrategy(SplitStrategy):
         # 过滤空句子和仅包含标点的句子
         filtered_sentences = self._filter_invalid_sentences(all_split_sentences)
 
-        logger.info(f"Long sentences split (jieba)")
+        logger.info("Long sentences split (jieba)")
         return filtered_sentences
 
-    def _split_long_sentence_single(self, text: str, max_tokens: int = 60) -> List[str]:
+    def _split_long_sentence_single(self, text: str, max_tokens: int = 60) -> list[str]:
         """分割单个长句子"""
         words = list(jieba.cut(text))
         n = len(words)
@@ -272,12 +272,12 @@ class ChineseSplitStrategy(SplitStrategy):
                     best_end = i + 1
                     break
 
-            sentences.append(''.join(words[current_start:best_end]).strip())
+            sentences.append("".join(words[current_start:best_end]).strip())
             current_start = best_end
 
         return sentences
 
-    def _split_extremely_long_sentence(self, text: str, max_tokens: int = 60) -> List[str]:
+    def _split_extremely_long_sentence(self, text: str, max_tokens: int = 60) -> list[str]:
         """分割极长句子（平均分割）"""
         words = list(jieba.cut(text))
         n = len(words)
@@ -292,11 +292,11 @@ class ChineseSplitStrategy(SplitStrategy):
         for i in range(num_parts):
             start = i * part_length
             end = start + part_length if i < num_parts - 1 else n
-            sentences.append(''.join(words[start:end]))
+            sentences.append("".join(words[start:end]))
 
         return sentences
 
-    def _filter_invalid_sentences(self, sentences: List[str]) -> List[str]:
+    def _filter_invalid_sentences(self, sentences: list[str]) -> list[str]:
         """过滤空句子和仅包含标点的句子"""
         punctuation = string.punctuation + "'" + '"'
         filtered_sentences = []
@@ -327,7 +327,7 @@ class SpacySplitStrategy(SplitStrategy):
         self.nlp = load_spacy_model(language)
         self.config = get_language_config(language)
 
-    def split_by_mark(self, df: pd.DataFrame, language: str) -> List[str]:
+    def split_by_mark(self, df: pd.DataFrame, language: str) -> list[str]:
         """按标点符号分割（使用 Spacy 句子分割器）"""
         df, joiner = prepare_dataframe(df, language)
         input_text = merge_dataframe_text(df, joiner)
@@ -345,25 +345,25 @@ class SpacySplitStrategy(SplitStrategy):
 
             # 检查是否需要合并（处理 ... 和 -）
             if current_sentence and (
-                    text.startswith('-') or
-                    text.startswith('...') or
-                    current_sentence[-1].endswith('-') or
-                    current_sentence[-1].endswith('...')
+                text.startswith("-")
+                or text.startswith("...")
+                or current_sentence[-1].endswith("-")
+                or current_sentence[-1].endswith("...")
             ):
                 current_sentence.append(text)
             else:
                 if current_sentence:
-                    sentences_by_mark.append(' '.join(current_sentence))
+                    sentences_by_mark.append(" ".join(current_sentence))
                     current_sentence = []
                 current_sentence.append(text)
 
         if current_sentence:
-            sentences_by_mark.append(' '.join(current_sentence))
+            sentences_by_mark.append(" ".join(current_sentence))
 
         # 合并仅包含标点的行到上一行
         result = []
         for i, sentence in enumerate(sentences_by_mark):
-            if i > 0 and sentence.strip() in [',', '.']:
+            if i > 0 and sentence.strip() in [",", "."]:
                 result[-1] += sentence
             else:
                 result.append(sentence)
@@ -371,7 +371,7 @@ class SpacySplitStrategy(SplitStrategy):
         logger.info(f"Split {len(result)} sentences by punctuation marks (spacy)")
         return result
 
-    def split_by_comma(self, sentences: List[str]) -> List[str]:
+    def split_by_comma(self, sentences: list[str]) -> list[str]:
         """按逗号分割"""
         all_split_sentences = []
 
@@ -379,10 +379,10 @@ class SpacySplitStrategy(SplitStrategy):
             split_sentences = self._split_by_comma_single(sentence.strip())
             all_split_sentences.extend(split_sentences)
 
-        logger.info(f"Sentences split by commas (spacy)")
+        logger.info("Sentences split by commas (spacy)")
         return all_split_sentences
 
-    def _split_by_comma_single(self, text: str) -> List[str]:
+    def _split_by_comma_single(self, text: str) -> list[str]:
         """单个句子的逗号分割"""
         doc = self.nlp(text)
         sentences = []
@@ -391,8 +391,8 @@ class SpacySplitStrategy(SplitStrategy):
         for i, token in enumerate(doc):
             if token.text == self.config.comma:
                 if self._is_suitable_for_comma_split(doc, start, token):
-                    sentences.append(doc[start:token.i].text.strip())
-                    logger.debug(f"Split at comma: {doc[start:token.i][-4:]},| {doc[token.i + 1:][:4]}")
+                    sentences.append(doc[start : token.i].text.strip())
+                    logger.debug(f"Split at comma: {doc[start : token.i][-4:]},| {doc[token.i + 1 :][:4]}")
                     start = token.i + 1
 
         sentences.append(doc[start:].text.strip())
@@ -400,14 +400,15 @@ class SpacySplitStrategy(SplitStrategy):
 
     def _is_suitable_for_comma_split(self, doc: "spacy.tokens.Doc", start: int, token: "spacy.tokens.Token") -> bool:
         """判断是否适合在逗号处分割"""
-        left_phrase = doc[max(start, token.i - 9):token.i]
-        right_phrase = doc[token.i + 1:min(len(doc), token.i + 10)]
+        left_phrase = doc[max(start, token.i - 9) : token.i]
+        right_phrase = doc[token.i + 1 : min(len(doc), token.i + 10)]
 
         # 检查右侧是否为有效短语
         suitable = is_valid_phrase_spacy(right_phrase)
 
         # 检查词数
         import itertools
+
         left_words = [t for t in left_phrase if not t.is_punct]
         right_words = list(itertools.takewhile(lambda t: not t.is_punct, right_phrase))
 
@@ -416,7 +417,7 @@ class SpacySplitStrategy(SplitStrategy):
 
         return suitable
 
-    def split_by_connectors(self, sentences: List[str]) -> List[str]:
+    def split_by_connectors(self, sentences: list[str]) -> list[str]:
         """按连接词分割"""
         all_split_sentences = []
 
@@ -424,10 +425,10 @@ class SpacySplitStrategy(SplitStrategy):
             split_sentences = self._split_by_connectors_single(sentence.strip())
             all_split_sentences.extend(split_sentences)
 
-        logger.info(f"Sentences split by connectors (spacy)")
+        logger.info("Sentences split by connectors (spacy)")
         return all_split_sentences
 
-    def _split_by_connectors_single(self, text: str, context_words: int = 5) -> List[str]:
+    def _split_by_connectors_single(self, text: str, context_words: int = 5) -> list[str]:
         """单个句子的连接词分割"""
         doc = self.nlp(text)
         sentences = [doc.text]
@@ -448,16 +449,17 @@ class SpacySplitStrategy(SplitStrategy):
                     if i + 1 < len(doc) and doc[i + 1].text in ["'s", "'re", "'ve", "'ll", "'d"]:
                         continue
 
-                    left_words = doc[max(0, token.i - context_words):token.i]
-                    right_words = doc[token.i + 1:min(len(doc), token.i + context_words + 1)]
+                    left_words = doc[max(0, token.i - context_words) : token.i]
+                    right_words = doc[token.i + 1 : min(len(doc), token.i + context_words + 1)]
 
                     left_words = [word.text for word in left_words if not word.is_punct]
                     right_words = [word.text for word in right_words if not word.is_punct]
 
                     if len(left_words) >= context_words and len(right_words) >= context_words and split_before:
                         logger.debug(
-                            f"Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}")
-                        new_sentences.append(doc[start:token.i].text.strip())
+                            f"Split before '{token.text}': {' '.join(left_words)}| {token.text} {' '.join(right_words)}"
+                        )
+                        new_sentences.append(doc[start : token.i].text.strip())
                         start = token.i
                         split_occurred = True
                         break
@@ -497,7 +499,7 @@ class SpacySplitStrategy(SplitStrategy):
 
         return True
 
-    def split_long_sentences(self, sentences: List[str], max_tokens: int = 60) -> List[str]:
+    def split_long_sentences(self, sentences: list[str], max_tokens: int = 60) -> list[str]:
         """分割长句子"""
         all_split_sentences = []
 
@@ -522,16 +524,16 @@ class SpacySplitStrategy(SplitStrategy):
         # 过滤空句子和仅包含标点的句子
         filtered_sentences = self._filter_invalid_sentences(all_split_sentences)
 
-        logger.info(f"Long sentences split (spacy)")
+        logger.info("Long sentences split (spacy)")
         return filtered_sentences
 
-    def _split_long_sentence_single(self, doc: "spacy.tokens.Doc", max_tokens: int = 60) -> List[str]:
+    def _split_long_sentence_single(self, doc: "spacy.tokens.Doc", max_tokens: int = 60) -> list[str]:
         """分割单个长句子（动态规划）"""
         tokens = [token.text for token in doc]
         n = len(tokens)
 
         # 动态规划数组
-        dp = [float('inf')] * (n + 1)
+        dp = [float("inf")] * (n + 1)
         dp[0] = 0
 
         # 记录最优分割点
@@ -541,7 +543,7 @@ class SpacySplitStrategy(SplitStrategy):
             for j in range(max(0, i - 100), i):
                 if i - j >= 30:  # 确保句子长度至少 30
                     token = doc[i - 1]
-                    if j == 0 or (token.is_sent_end or token.pos_ in ['VERB', 'AUX'] or token.dep_ == 'ROOT'):
+                    if j == 0 or (token.is_sent_end or token.pos_ in ["VERB", "AUX"] or token.dep_ == "ROOT"):
                         if dp[j] + 1 < dp[i]:
                             dp[i] = dp[j] + 1
                             prev[i] = j
@@ -550,6 +552,7 @@ class SpacySplitStrategy(SplitStrategy):
         sentences = []
         i = n
         from core.utils.common import get_joiner
+
         joiner = get_joiner(self.language)
 
         while i > 0:
@@ -559,7 +562,7 @@ class SpacySplitStrategy(SplitStrategy):
 
         return sentences[::-1]  # 反转保持原顺序
 
-    def _split_extremely_long_sentence(self, doc: "spacy.tokens.Doc", max_tokens: int = 60) -> List[str]:
+    def _split_extremely_long_sentence(self, doc: "spacy.tokens.Doc", max_tokens: int = 60) -> list[str]:
         """分割极长句子（平均分割）"""
         tokens = [token.text for token in doc]
         n = len(tokens)
@@ -569,6 +572,7 @@ class SpacySplitStrategy(SplitStrategy):
 
         sentences = []
         from core.utils.common import get_joiner
+
         joiner = get_joiner(self.language)
 
         for i in range(num_parts):
@@ -578,7 +582,7 @@ class SpacySplitStrategy(SplitStrategy):
 
         return sentences
 
-    def _filter_invalid_sentences(self, sentences: List[str]) -> List[str]:
+    def _filter_invalid_sentences(self, sentences: list[str]) -> list[str]:
         """过滤空句子和仅包含标点的句子"""
         punctuation = string.punctuation + "'" + '"'
         filtered_sentences = []
@@ -611,8 +615,7 @@ def get_split_strategy(language: str) -> SplitStrategy:
         return SpacySplitStrategy(language)
 
 
-
-def process_nlp_split(df: pd.DataFrame, language: str) -> List[str]:
+def process_nlp_split(df: pd.DataFrame, language: str) -> list[str]:
     """
     执行完整的 NLP 分割流程
 
@@ -649,7 +652,7 @@ def process_nlp_split(df: pd.DataFrame, language: str) -> List[str]:
     return result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
 
     # 测试用法：python jieba_spacy_split.py <file_path> <language>

@@ -11,7 +11,7 @@ from core.nlp.meaning_split import process_meaning_split
 DEFAULT_VIDEO_SOURCE = r"D:\PycharmProjects\VideoVerse\files\demo.mp4"
 DEFAULT_SOURCE_LANGUAGE = "zh"
 DEFAULT_TARGET_LANGUAGE = "en"
-#  是否使用Demucs进行人声分离
+# 是否使用Demucs进行人声分离
 demucs = True
 
 # 一：下载视频
@@ -41,9 +41,9 @@ for start, end in segments:
     all_results.append(result)
 
 # 2.6 合并结果
-combined_result = {'segments': []}
+combined_result = {"segments": []}
 for result in all_results:
-    combined_result['segments'].extend(result['segments'])
+    combined_result["segments"].extend(result["segments"])
 
 # 2.7 处理和保存结果
 df = process_transcription(combined_result)
@@ -58,4 +58,4 @@ result_zh = process_nlp_split(df, DEFAULT_SOURCE_LANGUAGE)
 logger.success(f"nlp处理完成：{result_zh}")
 
 # 四：语义分割 待验证
-mean_list=process_meaning_split(result_zh, DEFAULT_TARGET_LANGUAGE)
+mean_list = process_meaning_split(result_zh, DEFAULT_TARGET_LANGUAGE)

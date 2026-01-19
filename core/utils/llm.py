@@ -1,9 +1,8 @@
+from typing import Any
+
 import json_repair
-from typing import Any, Optional
-from openai import OpenAI
-
-
 from loguru import logger
+from openai import OpenAI
 
 from core.utils.cache import get_cache_manager
 
@@ -28,17 +27,17 @@ def ask_llm(
         raise ValueError("OPENAI_API_KEY is not set")
 
     # 检查缓存
-    cached = cache_manager.get_llm_cache(prompt,  log_title)
+    cached = cache_manager.get_llm_cache(prompt, log_title)
     if cached is not None:
         logger.info(f"Using cached LLM response for {log_title}")
         return cached
 
     # 构建 Base URL
     base_url = settings.openai_api_base
-    if 'ark' in base_url:
+    if "ark" in base_url:
         base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    elif 'v1' not in base_url:
-        base_url = base_url.rstrip('/') + '/v1'
+    elif "v1" not in base_url:
+        base_url = base_url.rstrip("/") + "/v1"
 
     # 创建同步客户端
     client = OpenAI(
@@ -73,7 +72,7 @@ def ask_llm(
 
 def ask_llm_batch(
     prompts: list[str],
-    resp_type: Optional[str] = None,
+    resp_type: str | None = None,
     log_title: str = "batch",
     max_workers: int = 5,
 ) -> list[Any]:
@@ -104,5 +103,5 @@ def ask_llm_batch(
     return sorted_results
 
 
-if __name__ == '__main__':
-    response_data = ask_llm("你是谁", log_title='split_by_meaning')
+if __name__ == "__main__":
+    response_data = ask_llm("你是谁", log_title="split_by_meaning")

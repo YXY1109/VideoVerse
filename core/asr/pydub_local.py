@@ -1,5 +1,4 @@
 import os
-from typing import Tuple, List
 
 from loguru import logger
 from pydub import AudioSegment
@@ -23,7 +22,7 @@ def normalize_audio_volume(audio_path: str, target_db: float = -20.0) -> str:
     return output_path
 
 
-def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -> List[Tuple[float, float]]:
+def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -> list[tuple[float, float]]:
     """同步分割音频"""
     logger.info(f"Splitting audio: {audio_file}")
     audio = AudioSegment.from_file(audio_file)
@@ -45,7 +44,8 @@ def split_audio(audio_file: str, target_len: float = 30 * 60, win: float = 60) -
         silence_regions = detect_silence(audio[ws:we], min_silence_len=int(safe_margin * 1000), silence_thresh=-30)
         silence_regions = [(s / 1000 + (threshold - win), e / 1000 + (threshold - win)) for s, e in silence_regions]
         valid_regions = [
-            (start, end) for start, end in silence_regions
+            (start, end)
+            for start, end in silence_regions
             if (end - start) >= (safe_margin * 2) and threshold <= start + safe_margin <= threshold + win
         ]
 

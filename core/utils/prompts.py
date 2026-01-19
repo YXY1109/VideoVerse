@@ -1,5 +1,6 @@
 import json
 
+
 # 辅助函数
 def load_key(key: str):
     return ""
@@ -11,7 +12,7 @@ def get_split_prompt(sentence, num_parts=2, word_limit=20):
     language = load_key("whisper.detected_language")
 
     # 根据语言设置不同的字数/词数限制说明
-    if language == 'zh':
+    if language == "zh":
         length_unit = "字（characters）"
         min_length = "10"
         split_instruction = """
@@ -84,7 +85,7 @@ def get_summary_prompt(source_content, custom_terms_json=None):
     terms_note = ""
     if custom_terms_json:
         terms_list = []
-        for term in custom_terms_json['terms']:
+        for term in custom_terms_json["terms"]:
             terms_list.append(f"- {term['src']}: {term['tgt']} ({term['note']})")
         terms_note = "\n### Existing Terms\nPlease exclude these terms in your extraction:\n" + "\n".join(terms_list)
 
@@ -153,7 +154,7 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 ## ================================================================
 # @ step5_translate.py & translate_lines.py
 def generate_shared_prompt(previous_content_prompt, after_content_prompt, summary_prompt, things_to_note_prompt):
-    return f'''### Context Information
+    return f"""### Context Information
 <previous_content>
 {previous_content_prompt}
 </previous_content>
@@ -166,13 +167,13 @@ def generate_shared_prompt(previous_content_prompt, after_content_prompt, summar
 {summary_prompt}
 
 ### Points to Note
-{things_to_note_prompt}'''
+{things_to_note_prompt}"""
 
 
 def get_prompt_faithfulness(lines, shared_prompt):
     TARGET_LANGUAGE = load_key("target_language")
     # Split lines by \n
-    line_splits = lines.split('\n')
+    line_splits = lines.split("\n")
 
     json_dict = {}
     for i, line in enumerate(line_splits, 1):
@@ -180,7 +181,7 @@ def get_prompt_faithfulness(lines, shared_prompt):
     json_format = json.dumps(json_dict, indent=2, ensure_ascii=False)
 
     src_language = load_key("whisper.detected_language")
-    prompt_faithfulness = f'''
+    prompt_faithfulness = f"""
 ## Role
 You are a professional Netflix subtitle translator, fluent in both {src_language} and {TARGET_LANGUAGE}, as well as their respective cultures. 
 Your expertise lies in accurately understanding the semantics and structure of the original {src_language} text and faithfully translating it into {TARGET_LANGUAGE} while preserving the original meaning.
@@ -211,7 +212,7 @@ We have a segment of original {src_language} subtitles that need to be directly 
 ```
 
 Note: Start you answer with ```json and end with ```, do not add any other text.
-'''
+"""
     return prompt_faithfulness.strip()
 
 
@@ -222,14 +223,14 @@ def get_prompt_expressiveness(faithfulness_result, lines, shared_prompt):
             "origin": value["origin"],
             "direct": value["direct"],
             "reflect": "your reflection on direct translation",
-            "free": "your free translation"
+            "free": "your free translation",
         }
         for key, value in faithfulness_result.items()
     }
     json_format = json.dumps(json_format, indent=2, ensure_ascii=False)
 
     src_language = load_key("whisper.detected_language")
-    prompt_expressiveness = f'''
+    prompt_expressiveness = f"""
 ## Role
 You are a professional Netflix subtitle translator and language consultant.
 Your expertise lies not only in accurately understanding the original {src_language} but also in optimizing the {TARGET_LANGUAGE} translation to better suit the target language's expression habits and cultural background.
@@ -271,7 +272,7 @@ Please use a two-step thinking process to handle the text line by line:
 ```
 
 Note: Start you answer with ```json and end with ```, do not add any other text.
-'''
+"""
     return prompt_expressiveness.strip()
 
 
@@ -280,15 +281,16 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 def get_align_prompt(src_sub, tr_sub, src_part):
     targ_lang = load_key("target_language")
     src_lang = load_key("whisper.detected_language")
-    src_splits = src_part.split('\n')
+    src_splits = src_part.split("\n")
     num_parts = len(src_splits)
-    src_part = src_part.replace('\n', ' [br] ')
-    align_parts_json = ','.join(
+    src_part = src_part.replace("\n", " [br] ")
+    align_parts_json = ",".join(
         f'''
         {{
             "src_part_{i + 1}": "{src_splits[i]}",
             "target_part_{i + 1}": "Corresponding aligned {targ_lang} subtitle part"
-        }}''' for i in range(num_parts)
+        }}'''
+        for i in range(num_parts)
     )
 
     align_prompt = f'''
@@ -329,11 +331,11 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 ## ================================================================
 # @ step8_gen_audio_task.py @ step10_gen_audio.py
 def get_subtitle_trim_prompt(text, duration):
-    rule = '''Consider a. Reducing filler words without modifying meaningful content. b. Omitting unnecessary modifiers or pronouns, for example:
+    rule = """Consider a. Reducing filler words without modifying meaningful content. b. Omitting unnecessary modifiers or pronouns, for example:
     - "Please explain your thought process" can be shortened to "Please explain thought process"
     - "We need to carefully analyze this complex problem" can be shortened to "We need to analyze this problem"
     - "Let's discuss the various different perspectives on this topic" can be shortened to "Let's discuss different perspectives on this topic"
-    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you describe yesterday's experience" '''
+    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you describe yesterday's experience" """
 
     trim_prompt = f'''
 ## Role
@@ -370,7 +372,7 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 ## ================================================================
 # @ tts_main
 def get_correct_text_prompt(text):
-    return f'''
+    return f"""
 ## Role
 You are a text cleaning expert for TTS (Text-to-Speech) systems.
 
@@ -390,4 +392,4 @@ Clean the given text by:
 ```
 
 Note: Start you answer with ```json and end with ```, do not add any other text.
-'''.strip()
+""".strip()

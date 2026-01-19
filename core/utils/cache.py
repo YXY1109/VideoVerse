@@ -3,13 +3,15 @@
 
 使用内存字典进行缓存，支持 TTL
 """
+
 import hashlib
 import time
-from typing import Any, Optional
+from typing import Any
 
 
 class _CacheEntry:
     """缓存条目"""
+
     def __init__(self, value: Any, ttl: int):
         self.value = value
         self.expires_at = time.time() + ttl
@@ -32,7 +34,7 @@ class CacheManager:
         content = ":".join(str(arg) for arg in args)
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def _get(self, cache: dict[str, _CacheEntry], key: str) -> Optional[Any]:
+    def _get(self, cache: dict[str, _CacheEntry], key: str) -> Any | None:
         """从缓存中获取值"""
         entry = cache.get(key)
         if entry is None:
@@ -46,7 +48,7 @@ class CacheManager:
         """设置缓存值"""
         cache[key] = _CacheEntry(value, self._ttl)
 
-    def get_llm_cache(self, prompt: str, resp_type: str = "default") -> Optional[Any]:
+    def get_llm_cache(self, prompt: str, resp_type: str = "default") -> Any | None:
         """获取 LLM 缓存"""
         key = self._make_key(resp_type, prompt)
         return self._get(self._llm_cache, key)
@@ -56,7 +58,7 @@ class CacheManager:
         key = self._make_key(resp_type, prompt)
         self._set(self._llm_cache, key, result)
 
-    def get_translation_cache(self, text: str, target_lang: str) -> Optional[str]:
+    def get_translation_cache(self, text: str, target_lang: str) -> str | None:
         """获取翻译缓存"""
         key = self._make_key(target_lang, text)
         result = self._get(self._translation_cache, key)
