@@ -58,4 +58,5 @@ result_zh = process_nlp_split(df, DEFAULT_SOURCE_LANGUAGE)
 logger.success(f"nlp处理完成：{result_zh}")
 
 # 四：语义分割 待验证
-mean_list = process_meaning_split(result_zh, DEFAULT_TARGET_LANGUAGE)
+mean_list = process_meaning_split(result_zh, DEFAULT_SOURCE_LANGUAGE)
+logger.success(f"语义分割处理完成：{mean_list}")
