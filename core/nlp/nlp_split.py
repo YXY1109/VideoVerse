@@ -83,7 +83,7 @@ def load_chinese_stopwords(stopwords_path: str | Path | None = None) -> set[str]
         logger.info(f"Loaded {len(stopwords)} Chinese stopwords from {stopwords_path}")
         return stopwords
     except Exception as e:
-        raise OSError(f"Failed to load Chinese stopwords from {stopwords_path}: {e}")
+        raise OSError(f"Failed to load Chinese stopwords from {stopwords_path}: {e}") from e
 
 
 def get_effective_words_jieba(text: str, stopwords: set[str] | None = None, remove_punct: bool = True) -> list[str]:

@@ -2,7 +2,12 @@ import os
 import time
 from pathlib import Path
 
+import librosa
+import torch
+import whisperx
+from huggingface_hub import snapshot_download
 from loguru import logger
+from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF
 
 # weights_only bug https://github.com/m-bain/whisperX/issues/1304
 os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "true"
@@ -26,12 +31,6 @@ model_cache_dir = r"D:\PycharmProjects\VideoVerse\models"
 # 在加载模型前设置 HuggingFace 缓存目录（必须在使用 whisperx 前调用）
 setup_huggingface_cache(model_cache_dir)
 
-import librosa
-import torch
-import whisperx
-from huggingface_hub import snapshot_download
-from whisperx.alignment import DEFAULT_ALIGN_MODELS_HF
-
 
 # Fix encoding for Chinese text (faster-whisper bug)
 def fix_text_encoding(text: str) -> str:
@@ -45,7 +44,7 @@ def fix_text_encoding(text: str) -> str:
             fixed = text.encode(enc).decode("utf-8")
             if any("\u4e00" <= c <= "\u9fff" for c in fixed):
                 return fixed
-        except:
+        except (UnicodeError, LookupError):
             continue
     return text
 

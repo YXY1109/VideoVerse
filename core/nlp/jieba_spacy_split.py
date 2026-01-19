@@ -32,7 +32,7 @@ from core.nlp.nlp_split import (
 )
 
 if TYPE_CHECKING:
-    pass
+    import spacy.tokens
 
 
 class SplitStrategy(ABC):
@@ -388,7 +388,7 @@ class SpacySplitStrategy(SplitStrategy):
         sentences = []
         start = 0
 
-        for i, token in enumerate(doc):
+        for token in doc:
             if token.text == self.config.comma:
                 if self._is_suitable_for_comma_split(doc, start, token):
                     sentences.append(doc[start : token.i].text.strip())

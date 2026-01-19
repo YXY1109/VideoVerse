@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import json_repair
@@ -7,6 +8,34 @@ from openai import OpenAI
 from core.utils.cache import get_cache_manager
 
 cache_manager = get_cache_manager()
+
+
+# Simple settings fallback using environment variables
+class _Settings:
+    """Simple settings class using environment variables."""
+
+    @property
+    def openai_api_key(self) -> str:
+        return os.getenv("OPENAI_API_KEY", "")
+
+    @property
+    def openai_api_base(self) -> str:
+        return os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+
+    @property
+    def openai_model(self) -> str:
+        return os.getenv("OPENAI_MODEL", "gpt-4o")
+
+    @property
+    def openai_max_tokens(self) -> int:
+        return int(os.getenv("OPENAI_MAX_TOKENS", "4096"))
+
+    @property
+    def openai_llm_support_json(self) -> bool:
+        return os.getenv("OPENAI_LLM_SUPPORT_JSON", "true").lower() == "true"
+
+
+settings = _Settings()
 
 
 def ask_llm(

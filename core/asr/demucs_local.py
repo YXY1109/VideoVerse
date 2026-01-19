@@ -19,7 +19,7 @@ def demucs_audio(input_audio: str) -> str:
     if os.path.exists(output_path):
         logger.warning(f"Demucs already exists:{output_path}")
         return output_path
-    subprocess.run(
+    subprocess.run(  # noqa: S603
         [
             python_exe,
             "-m",

@@ -91,7 +91,8 @@ def get_summary_prompt(source_content, custom_terms_json=None):
 
     summary_prompt = f"""
 ## Role
-You are a video translation expert and terminology consultant, specializing in {src_lang} comprehension and {tgt_lang} expression optimization.
+You are a video translation expert and terminology consultant, specializing in {src_lang}
+comprehension and {tgt_lang} expression optimization.
 
 ## Task
 For the provided {src_lang} video text:
@@ -122,12 +123,12 @@ Steps:
   "terms": [
     {{
       "src": "{src_lang} term",
-      "tgt": "{tgt_lang} translation or original", 
+      "tgt": "{tgt_lang} translation or original",
       "note": "Brief explanation"
     }},
     ...
   ]
-}}  
+}}
 
 ## Example
 {{
@@ -171,34 +172,43 @@ def generate_shared_prompt(previous_content_prompt, after_content_prompt, summar
 
 
 def get_prompt_faithfulness(lines, shared_prompt):
-    TARGET_LANGUAGE = load_key("target_language")
+    target_language = load_key("target_language")
     # Split lines by \n
     line_splits = lines.split("\n")
 
     json_dict = {}
     for i, line in enumerate(line_splits, 1):
-        json_dict[f"{i}"] = {"origin": line, "direct": f"direct {TARGET_LANGUAGE} translation {i}."}
+        json_dict[f"{i}"] = {"origin": line, "direct": f"direct {target_language} translation {i}."}
     json_format = json.dumps(json_dict, indent=2, ensure_ascii=False)
 
     src_language = load_key("whisper.detected_language")
     prompt_faithfulness = f"""
 ## Role
-You are a professional Netflix subtitle translator, fluent in both {src_language} and {TARGET_LANGUAGE}, as well as their respective cultures. 
-Your expertise lies in accurately understanding the semantics and structure of the original {src_language} text and faithfully translating it into {TARGET_LANGUAGE} while preserving the original meaning.
+You are a professional Netflix subtitle translator, fluent in both {src_language} and
+{target_language}, as well as their respective cultures.
+Your expertise lies in accurately understanding the semantics and structure of the original
+{src_language} text and faithfully translating it into {target_language} while preserving the
+original meaning.
 
 ## Task
-We have a segment of original {src_language} subtitles that need to be directly translated into {TARGET_LANGUAGE}. These subtitles come from a specific context and may contain specific themes and terminology.
+We have a segment of original {src_language} subtitles that need to be directly translated
+into {target_language}. These subtitles come from a specific context and may contain specific
+themes and terminology.
 
-1. Translate the original {src_language} subtitles into {TARGET_LANGUAGE} line by line
-2. Ensure the translation is faithful to the original, accurately conveying the original meaning
+1. Translate the original {src_language} subtitles into {target_language} line by line
+2. Ensure the translation is faithful to the original, accurately conveying the original
+   meaning
 3. Consider the context and professional terminology
 
 {shared_prompt}
 
 <translation_principles>
-1. Faithful to the original: Accurately convey the content and meaning of the original text, without arbitrarily changing, adding, or omitting content.
-2. Accurate terminology: Use professional terms correctly and maintain consistency in terminology.
-3. Understand the context: Fully comprehend and reflect the background and contextual relationships of the text.
+1. Faithful to the original: Accurately convey the content and meaning of the original text,
+   without arbitrarily changing, adding, or omitting content.
+2. Accurate terminology: Use professional terms correctly and maintain consistency in
+   terminology.
+3. Understand the context: Fully comprehend and reflect the background and contextual
+   relationships of the text.
 </translation_principles>
 
 ## INPUT
@@ -217,7 +227,7 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 
 
 def get_prompt_expressiveness(faithfulness_result, lines, shared_prompt):
-    TARGET_LANGUAGE = load_key("target_language")
+    target_language = load_key("target_language")
     json_format = {
         key: {
             "origin": value["origin"],
@@ -233,17 +243,22 @@ def get_prompt_expressiveness(faithfulness_result, lines, shared_prompt):
     prompt_expressiveness = f"""
 ## Role
 You are a professional Netflix subtitle translator and language consultant.
-Your expertise lies not only in accurately understanding the original {src_language} but also in optimizing the {TARGET_LANGUAGE} translation to better suit the target language's expression habits and cultural background.
+Your expertise lies not only in accurately understanding the original {src_language} but also
+in optimizing the {target_language} translation to better suit the target language's
+expression habits and cultural background.
 
 ## Task
 We already have a direct translation version of the original {src_language} subtitles.
-Your task is to reflect on and improve these direct translations to create more natural and fluent {TARGET_LANGUAGE} subtitles.
+Your task is to reflect on and improve these direct translations to create more natural and
+fluent {target_language} subtitles.
 
 1. Analyze the direct translation results line by line, pointing out existing issues
 2. Provide detailed modification suggestions
 3. Perform free translation based on your analysis
-4. Do not add comments or explanations in the translation, as the subtitles are for the audience to read
-5. Do not leave empty lines in the free translation, as the subtitles are for the audience to read
+4. Do not add comments or explanations in the translation, as the subtitles are for the
+   audience to read
+5. Do not leave empty lines in the free translation, as the subtitles are for the audience
+   to read
 
 {shared_prompt}
 
@@ -255,12 +270,15 @@ Please use a two-step thinking process to handle the text line by line:
    - Check if the language style is consistent with the original text
    - Check the conciseness of the subtitles, point out where the translation is too wordy
 
-2. {TARGET_LANGUAGE} Free Translation:
-   - Aim for contextual smoothness and naturalness, conforming to {TARGET_LANGUAGE} expression habits
-   - Ensure it's easy for {TARGET_LANGUAGE} audience to understand and accept
-   - Adapt the language style to match the theme (e.g., use casual language for tutorials, professional terminology for technical content, formal language for documentaries)
+2. {target_language} Free Translation:
+   - Aim for contextual smoothness and naturalness, conforming to {target_language}
+     expression habits
+   - Ensure it's easy for {target_language} audience to understand and accept
+   - Adapt the language style to match the theme (e.g., use casual language for
+     tutorials, professional terminology for technical content, formal language for
+     documentaries)
 </Translation Analysis Steps>
-   
+
 ## INPUT
 <subtitles>
 {lines}
@@ -298,13 +316,18 @@ def get_align_prompt(src_sub, tr_sub, src_part):
 You are a Netflix subtitle alignment expert fluent in both {src_lang} and {targ_lang}.
 
 ## Task
-We have {src_lang} and {targ_lang} original subtitles for a Netflix program, as well as a pre-processed split version of {src_lang} subtitles.
-Your task is to create the best splitting scheme for the {targ_lang} subtitles based on this information.
+We have {src_lang} and {targ_lang} original subtitles for a Netflix program, as well as a
+pre-processed split version of {src_lang} subtitles.
+Your task is to create the best splitting scheme for the {targ_lang} subtitles based on this
+information.
 
-1. Analyze the word order and structural correspondence between {src_lang} and {targ_lang} subtitles
+1. Analyze the word order and structural correspondence between {src_lang} and {targ_lang}
+   subtitles
 2. Split the {targ_lang} subtitles according to the pre-processed {src_lang} split version
-3. Never leave empty lines. If it's difficult to split based on meaning, you may appropriately rewrite the sentences that need to be aligned
-4. Do not add comments or explanations in the translation, as the subtitles are for the audience to read
+3. Never leave empty lines. If it's difficult to split based on meaning, you may appropriately
+   rewrite the sentences that need to be aligned
+4. Do not add comments or explanations in the translation, as the subtitles are for the audience
+   to read
 
 ## INPUT
 <subtitles>
@@ -329,18 +352,24 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
 
 
 ## ================================================================
-# @ step8_gen_audio_task.py @ step10_gen_audio.py
 def get_subtitle_trim_prompt(text, duration):
-    rule = """Consider a. Reducing filler words without modifying meaningful content. b. Omitting unnecessary modifiers or pronouns, for example:
-    - "Please explain your thought process" can be shortened to "Please explain thought process"
-    - "We need to carefully analyze this complex problem" can be shortened to "We need to analyze this problem"
-    - "Let's discuss the various different perspectives on this topic" can be shortened to "Let's discuss different perspectives on this topic"
-    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you describe yesterday's experience" """
+    rule = """Consider a. Reducing filler words without modifying meaningful content.
+b. Omitting unnecessary modifiers or pronouns, for example:
+    - "Please explain your thought process" can be shortened to "Please explain thought
+      process"
+    - "We need to carefully analyze this complex problem" can be shortened to "We need to
+      analyze this problem"
+    - "Let's discuss the various different perspectives on this topic" can be shortened to
+      "Let's discuss different perspectives on this topic"
+    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you
+      describe yesterday's experience\""""
 
     trim_prompt = f'''
 ## Role
-You are a professional subtitle editor, editing and optimizing lengthy subtitles that exceed voiceover time before handing them to voice actors. 
-Your expertise lies in cleverly shortening subtitles slightly while ensuring the original meaning and structure remain unchanged.
+You are a professional subtitle editor, editing and optimizing lengthy subtitles that exceed
+voiceover time before handing them to voice actors.
+Your expertise lies in cleverly shortening subtitles slightly while ensuring the original
+meaning and structure remain unchanged.
 
 ## INPUT
 <subtitles>
@@ -353,13 +382,16 @@ Duration: {duration} seconds
 
 ## Processing Steps
 Please follow these steps and provide the results in the JSON output:
-1. Analysis: Briefly analyze the subtitle's structure, key information, and filler words that can be omitted.
-2. Trimming: Based on the rules and analysis, optimize the subtitle by making it more concise according to the processing rules.
+1. Analysis: Briefly analyze the subtitle's structure, key information, and filler words that
+   can be omitted.
+2. Trimming: Based on the rules and analysis, optimize the subtitle by making it more concise
+   according to the processing rules.
 
 ## Output in only JSON format and no other text
 ```json
 {{
-    "analysis": "Brief analysis of the subtitle, including structure, key information, and potential processing locations",
+    "analysis": "Brief analysis of the subtitle, including structure, key information, and
+                 potential processing locations",
     "result": "Optimized and shortened subtitle in the original subtitle language"
 }}
 ```

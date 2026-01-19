@@ -60,7 +60,7 @@ def parallel_split_sentences(
             else:
                 new_sentences[index] = [sentence]
 
-        for future, index, num_parts, sentence in futures:
+        for future, index, _num_parts, sentence in futures:
             split_result = future.result()
             if split_result:
                 split_lines = split_result.strip().split("\n")

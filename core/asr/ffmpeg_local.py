@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 from loguru import logger
@@ -17,9 +18,12 @@ def ffmpeg_video_to_audio(video_file: str) -> str:
         logger.warning(f"Audio file already exists: {audio_path}")
         return audio_path
     logger.info(f"Converting video to audio: {video_file} -> {audio_path}")
-    subprocess.run(
+    ffmpeg_path = shutil.which("ffmpeg")
+    if not ffmpeg_path:
+        raise RuntimeError("ffmpeg executable not found in PATH")
+    subprocess.run(  # noqa: S603
         [
-            "ffmpeg",
+            ffmpeg_path,
             "-y",
             "-i",
             video_file,
@@ -37,7 +41,6 @@ def ffmpeg_video_to_audio(video_file: str) -> str:
             str(audio_path),
         ],
         check=True,
-        stderr=subprocess.PIPE,
     )
     logger.success(f"Audio conversion completed: {audio_path}")
     return audio_path
