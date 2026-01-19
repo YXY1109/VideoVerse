@@ -989,6 +989,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/bd/1a875e0d592d447cbc02805fd3fe0f497714d6a2583f59d14fa9ebad96eb/huggingface_hub-0.36.0-py3-none-any.whl", hash = "sha256:7bcc9ad17d5b3f07b57c78e79d527102d08313caa278a641993acddcb894548d", size = 566094, upload-time = "2025-10-23T12:11:59.557Z" },
 ]
 
+[package.optional-dependencies]
+hf-xet = [
+    { name = "hf-xet" },
+]
+
 [[package]]
 name = "humanfriendly"
 version = "10.0"
@@ -3682,6 +3687,7 @@ version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "demucs" },
+    { name = "huggingface-hub", extra = ["hf-xet"] },
     { name = "jieba" },
     { name = "json-repair" },
     { name = "librosa" },
@@ -3711,6 +3717,7 @@ dev = [
 requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "demucs", editable = "files/demucs-main" },
+    { name = "huggingface-hub", extras = ["hf-xet"], specifier = ">=0.36.0" },
     { name = "jieba", specifier = ">=0.42.1" },
     { name = "json-repair", specifier = ">=0.55.0" },
     { name = "librosa", specifier = ">=0.11.0" },
