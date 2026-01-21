@@ -12,7 +12,7 @@ from core.utils.llm import ask_llm
 from core.utils.prompts import get_split_prompt
 
 
-def process_meaning_split(sentences: list, source_language: str = "en") -> str:
+def process_meaning_split(sentences: list, source_language: str = "en") -> list:
     """
     流水线第四步：AI 语义分割
 
@@ -92,11 +92,9 @@ def split_sentence(sentence, num_parts, word_limit=20, index=-1, retry_attempt=0
             return {"status": "error", "message": "Split failed, no [br] found"}
         return {"status": "success", "message": "Split completed"}
 
-    response_data = ask_llm(
-        split_prompt + " " * retry_attempt, resp_type="json", valid_def=valid_split, log_title="split_by_meaning"
-    )
-    choice = response_data["choice"]
-    best_split = response_data[f"split{choice}"]
+    response_dict = ask_llm(split_prompt + " " * retry_attempt, log_title="split_by_meaning")
+    choice = response_dict["choice"]
+    best_split = response_dict[f"split{choice}"]
     split_points = find_split_positions(sentence, best_split)
     # split the sentence based on the split points
     for i, split_point in enumerate(split_points):

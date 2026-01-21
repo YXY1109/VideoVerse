@@ -6,6 +6,7 @@
 
 import hashlib
 import time
+from functools import lru_cache
 from typing import Any
 
 
@@ -75,10 +76,11 @@ class CacheManager:
         self._translation_cache.clear()
 
 
-# 全局缓存实例
-cache_manager = CacheManager()
-
-
+@lru_cache
 def get_cache_manager() -> CacheManager:
     """获取缓存管理器"""
-    return cache_manager
+    return CacheManager()
+
+
+# 全局缓存实例
+cache_manager = get_cache_manager()

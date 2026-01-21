@@ -1,136 +1,119 @@
-import os
-from typing import Any
+"""LLM API client for synchronous calls."""
+
+from collections.abc import Sequence
+from functools import lru_cache
+from typing import Final
 
 import json_repair
 from loguru import logger
-from openai import OpenAI
+from openai import APIConnectionError, APIError, APIStatusError, APITimeoutError, OpenAI
 
-from core.utils.cache import get_cache_manager
+from core.config import settings
+from core.utils.cache import cache_manager
 
-cache_manager = get_cache_manager()
-
-
-# Simple settings fallback using environment variables
-class _Settings:
-    """Simple settings class using environment variables."""
-
-    @property
-    def openai_api_key(self) -> str:
-        return os.getenv("OPENAI_API_KEY", "")
-
-    @property
-    def openai_api_base(self) -> str:
-        return os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
-
-    @property
-    def openai_model(self) -> str:
-        return os.getenv("OPENAI_MODEL", "gpt-4o")
-
-    @property
-    def openai_max_tokens(self) -> int:
-        return int(os.getenv("OPENAI_MAX_TOKENS", "4096"))
-
-    @property
-    def openai_llm_support_json(self) -> bool:
-        return os.getenv("OPENAI_LLM_SUPPORT_JSON", "true").lower() == "true"
+# 常量定义
+_DEFAULT_TIMEOUT: Final = 300.0
+_MAX_RETRIES: Final = 2
 
 
-settings = _Settings()
+@lru_cache(maxsize=1)
+def _get_openai_client() -> OpenAI:
+    """获取缓存的 OpenAI 客户端单例。"""
+    return OpenAI(
+        api_key=settings.openai_api_key,
+        base_url=settings.openai_api_base,
+        max_retries=_MAX_RETRIES,
+        timeout=_DEFAULT_TIMEOUT,
+    )
 
 
 def ask_llm(
     prompt: str,
     log_title: str = "default",
-) -> Any:
+) -> dict:
     """
-    同步调用 LLM API
+    同步调用 LLM API。
 
     Args:
         prompt: 提示词
         log_title: 日志标题（用于缓存键）
-    Returns:
-        LLM 响应结果
-    """
-    # 检查 API Key
-    if not settings.openai_api_key:
-        raise ValueError("OPENAI_API_KEY is not set")
 
+    Returns:
+        LLM 响应内容
+
+    Raises:
+        APIError: API 调用失败
+        APITimeoutError: 请求超时
+        APIConnectionError: 连接失败
+        APIStatusError: API 返回错误状态码
+    """
     # 检查缓存
     cached = cache_manager.get_llm_cache(prompt, log_title)
     if cached is not None:
         logger.info(f"Using cached LLM response for {log_title}")
         return cached
 
-    # 构建 Base URL
-    base_url = settings.openai_api_base
-    if "ark" in base_url:
-        base_url = "https://ark.cn-beijing.volces.com/api/v3"
-    elif "v1" not in base_url:
-        base_url = base_url.rstrip("/") + "/v1"
-
-    # 创建同步客户端
-    client = OpenAI(
-        api_key=settings.openai_api_key,
-        base_url=base_url,
-    )
+    client = _get_openai_client()
 
     # 构建请求参数
-    response_format = {"type": "json_object"} if settings.openai_llm_support_json else None
-    messages = [{"role": "user", "content": prompt}]
+    request_params = {
+        "model": settings.openai_model,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if settings.openai_max_tokens is not None:
+        request_params["max_tokens"] = settings.openai_max_tokens
 
+    # 发起请求
     try:
-        response = client.chat.completions.create(
-            model=settings.openai_model,
-            messages=messages,
-            response_format=response_format,
-            max_tokens=settings.openai_max_tokens,
-            timeout=300.0,
-        )
-    finally:
-        client.close()
+        response = client.chat.completions.create(**request_params)
+    except (APIError, APITimeoutError, APIConnectionError, APIStatusError) as e:
+        logger.error(f"LLM API call failed for {log_title}: {e}")
+        raise
 
     # 处理响应
-    resp_content = response.choices[0].message.content
-    result = json_repair.loads(resp_content)
-
+    resp_content = response.choices[0].message.content or ""
+    logger.success(f"LLM response for {log_title}: {resp_content}")
+    result_dict = json_repair.loads(resp_content)
     # 保存缓存
-    cache_manager.set_llm_cache(prompt, result, log_title)
-
-    return result
+    cache_manager.set_llm_cache(prompt, result_dict, log_title)
+    return result_dict
 
 
 def ask_llm_batch(
-    prompts: list[str],
-    resp_type: str | None = None,
+    prompts: Sequence[str],
     log_title: str = "batch",
     max_workers: int = 5,
-) -> list[Any]:
+) -> list[str]:
     """
-    批量同步调用 LLM API (使用线程池)
+    批量同步调用 LLM API（使用线程池）。
 
     Args:
         prompts: 提示词列表
-        resp_type: 响应类型
-        log_title: 日志标题
+        log_title: 日志标题（用作缓存键前缀）
         max_workers: 最大线程数
 
     Returns:
-        LLM 响应结果列表
+        按原始顺序排列的 LLM 响应内容列表
     """
     import concurrent.futures
 
-    def call_with_index(prompt: str, index: int) -> tuple[int, Any]:
-        result = ask_llm(prompt, resp_type, f"{log_title}_{index}")
-        return index, result
+    def call_with_index(prompt: str, index: int) -> tuple[int, dict]:
+        result_dict = ask_llm(prompt, f"{log_title}_{index}")
+        return index, result_dict
 
+    results: list[tuple[int, str]] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(call_with_index, prompt, i) for i, prompt in enumerate(prompts)]
-        results = [future.result() for future in concurrent.futures.as_completed(futures)]
+        futures = {executor.submit(call_with_index, prompt, i): i for i, prompt in enumerate(prompts)}
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
 
     # 按原始顺序排序
-    sorted_results = [r for _, r in sorted(results, key=lambda x: x[0])]
-    return sorted_results
+    return [r for _, r in sorted(results, key=lambda x: x[0])]
 
 
 if __name__ == "__main__":
-    response_data = ask_llm("你是谁", log_title="split_by_meaning")
+    response_dict = ask_llm("你是谁", log_title="split_by_meaning")
+    print(response_dict)
+
+    # response_data_list = ask_llm_batch(["你是谁", "你好", "我爱你"], log_title="split_by_meaning")
+    # print(response_data_list)
