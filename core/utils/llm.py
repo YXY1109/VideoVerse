@@ -72,7 +72,7 @@ def ask_llm(
 
     # 处理响应
     resp_content = response.choices[0].message.content or ""
-    logger.success(f"LLM response for {log_title}: {resp_content}")
+    logger.debug(f"LLM response for {log_title}: {resp_content}")
     result_dict = json_repair.loads(resp_content)
     # 保存缓存
     cache_manager.set_llm_cache(prompt, result_dict, log_title)
