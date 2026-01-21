@@ -1,189 +1,317 @@
+"""AI 语义分割模块 - 将长句子按语义边界分割成适合字幕的片段。
+
+该模块使用 LLM 将过长的句子按语义边界分割，确保每个片段适合字幕显示。
+"""
+
+from __future__ import annotations
+
 import concurrent.futures
 import math
-from difflib import SequenceMatcher
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import jieba
 from loguru import logger
-from rich.table import Table
 
 from core.nlp.nlp_split import load_spacy_model
-from core.utils.common import get_joiner
 from core.utils.llm import ask_llm
 from core.utils.prompts import get_split_prompt
 
+if TYPE_CHECKING:
+    from spacy import Language
 
-def process_meaning_split(sentences: list, source_language: str = "en") -> list:
-    """
-    流水线第四步：AI 语义分割
+
+# ==================== 常量定义 ====================
+class Config:
+    """语义分割配置常量"""
+    # 分割参数
+    MAX_SEGMENT_LENGTH = 20          # 每个片段最大字符/词数
+    MIN_SEGMENT_LENGTH = 3           # 每个片段最小字符/词数
+    MAX_WORKERS = 5                  # 最大并行工作线程数
+    MAX_RETRIES = 3                  # 最大重试次数
+
+    # 验证参数
+    COVERAGE_MIN_RATIO = 0.6         # 分割结果最小覆盖率
+    COVERAGE_MAX_RATIO = 1.4         # 分割结果最大覆盖率
+    NON_STRICT_TOLERANCE = 0.3       # 非严格模式允许超出的比例
+
+
+# ==================== 类型定义 ====================
+@dataclass(frozen=True)
+class SplitRequest:
+    """分割请求参数"""
+    sentence: str
+    num_parts: int
+    word_limit: int = Config.MAX_SEGMENT_LENGTH
+    language: str = "zh"
+    index: int = -1
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    """验证结果"""
+    is_valid: bool
+    reason: str = ""
+
+
+# ==================== 主入口函数 ====================
+def process_meaning_split(sentences: list[str], source_language: str = "en") -> list[str]:
+    """流水线第四步：AI 语义分割
 
     Args:
-        sentences: NLP 分割结果文件路径
-        source_language: 源语言代码
+        sentences: NLP 分割后的句子列表
+        source_language: 源语言代码 (如 "zh", "en")
 
     Returns:
-        分割结果文件路径
+        分割后的句子列表
     """
-    logger.info("Starting meaning split with AI")
-    # 检测语言，中文使用 jieba 进行 tokenization
-    use_jieba = source_language == "zh"
+    logger.info(f"Starting meaning split with AI, language: {source_language}")
 
-    if use_jieba:
-        logger.warning("Using jieba for Chinese tokenization in meaning split")
-        nlp = None
+    # 加载分词模型
+    nlp = None if source_language == "zh" else load_spacy_model(source_language)
+    if source_language == "zh":
+        logger.info("Using jieba for Chinese tokenization")
+
+    # 并行处理
+    result = _parallel_split(sentences, source_language, nlp)
+
+    logger.info(f"Meaning split completed, total {len(result)} segments")
+    return result
+
+
+# ==================== 核心分割逻辑 ====================
+def _parallel_split(
+    sentences: list[str],
+    language: str,
+    nlp: Language | None,
+) -> list[str]:
+    """并行分割句子列表"""
+    results: list[list[str] | None] = [None] * len(sentences)
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(Config.MAX_WORKERS, len(sentences))
+    ) as executor:
+        futures = {}
+
+        for idx, sentence in enumerate(sentences):
+            if not sentence or not sentence.strip():
+                results[idx] = []
+                continue
+
+            # 计算是否需要分割
+            num_parts = _calculate_split_parts(sentence, language, Config.MAX_SEGMENT_LENGTH)
+
+            if num_parts > 1:
+                request = SplitRequest(sentence, num_parts, Config.MAX_SEGMENT_LENGTH, language, idx)
+                futures[executor.submit(_split_with_retry, request)] = idx
+            else:
+                results[idx] = [sentence]
+
+        # 收集结果
+        for future in concurrent.futures.as_completed(futures):
+            idx = futures[future]
+            try:
+                split_result = future.result()
+                results[idx] = split_result if split_result else [sentences[idx]]
+            except Exception as e:
+                logger.error(f"Error splitting sentence at index {idx}: {e}")
+                results[idx] = [sentences[idx]]
+
+    # 扁平化结果
+    return [seg for parts in results if parts for seg in parts]
+
+
+def _split_with_retry(request: SplitRequest) -> list[str] | None:
+    """带重试机制的分割
+
+    采用渐进式策略：
+    - 前 2 次：严格模式
+    - 第 3 次：非严格模式（允许轻微超出限制）
+    """
+    if not request.sentence or not request.sentence.strip():
+        return None
+
+    for attempt in range(Config.MAX_RETRIES):
+        strict = attempt < 2
+        prompt = _build_split_prompt(request, attempt)
+
+        try:
+            response = ask_llm(prompt, log_title="split_by_meaning")
+            choice = response.get("choice", "1")
+            content = response.get(f"split{choice}", "")
+
+            if not content:
+                continue
+
+            segments = _extract_and_validate_segments(
+                content, request.sentence, request.language,
+                request.word_limit, request.num_parts, strict
+            )
+
+            if segments:
+                if request.index != -1:
+                    logger.info(f"Sentence {request.index} split into {len(segments)} parts (attempt {attempt + 1})")
+                    _log_split_result(request.sentence, segments)
+                return segments
+
+        except Exception as e:
+            logger.error(f"Attempt {attempt + 1}: {e}")
+            if attempt == Config.MAX_RETRIES - 1:
+                return None
+
+    logger.warning(f"Failed to split after {Config.MAX_RETRIES} attempts: {request.sentence[:50]}...")
+    return None
+
+
+# ==================== 辅助函数 ====================
+def _calculate_split_parts(sentence: str, language: str, max_length: int) -> int:
+    """计算需要分割成几部分"""
+    if language == "zh":
+        length = len(sentence)
     else:
-        nlp = load_spacy_model(source_language)
+        # 英文按空格分词后计算
+        length = len(sentence.split())
+    return max(1, math.ceil(length / max_length))
 
-    # process sentences multiple times to ensure all are split
-    sentences = parallel_split_sentences(
-        sentences, language=source_language, nlp=nlp, use_jieba=use_jieba, max_length=10
+
+def _build_split_prompt(request: SplitRequest, attempt: int) -> str:
+    """构建分割提示词，添加重试信息"""
+    prompt = get_split_prompt(
+        request.sentence, request.num_parts,
+        request.word_limit, language=request.language
     )
 
-    return sentences
+    if attempt == 0:
+        return prompt
+
+    unit = "字" if request.language == "zh" else "词"
+    retry_msg = (
+        f"\n\n## RETRY {attempt + 1}/{Config.MAX_RETRIES}\n"
+        f"Previous attempt failed. Ensure:\n"
+        f"1. Each part ≤ {request.word_limit} {unit}\n"
+        f"2. Exactly {request.num_parts} parts"
+    )
+
+    if attempt == 2:  # 非严格模式提示
+        max_allowed = int(request.word_limit * 1.3)
+        retry_msg += f"\n3. If necessary, may exceed up to {max_allowed} {unit} for coherence"
+
+    return prompt + retry_msg
 
 
-def parallel_split_sentences(
-    sentences: list, language: str, nlp=None, max_length: int = 42, use_jieba: bool = False
-) -> list:
-    """Split sentences in parallel using a thread pool."""
-    new_sentences = [None] * len(sentences)
-    futures = []
+def _extract_and_validate_segments(
+    content: str,
+    original: str,
+    language: str,
+    limit: int,
+    expected_parts: int,
+    strict: bool,
+) -> list[str] | None:
+    """提取并验证分割片段"""
+    # 提取片段
+    parts = _parse_split_content(content)
+    if not parts:
+        return None
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        for index, sentence in enumerate(sentences):
-            # Use tokenizer to split the sentence (jieba for Chinese, Spacy for others)
-            tokens = tokenize_sentence(sentence, nlp, use_jieba=use_jieba)
-            # print("Tokenization result:", tokens)
-            num_parts = math.ceil(len(tokens) / max_length)
-            if len(tokens) > max_length:
-                future = executor.submit(split_sentence, sentence, num_parts, max_length, index=index, retry_attempt=3)
-                futures.append((future, index, num_parts, sentence))
-            else:
-                new_sentences[index] = [sentence]
+    # 过滤过短片段
+    parts = _filter_short_parts(parts, language)
+    if not parts:
+        return None
 
-        for future, index, _num_parts, sentence in futures:
-            split_result = future.result()
-            if split_result:
-                split_lines = split_result.strip().split("\n")
-                new_sentences[index] = [line.strip() for line in split_lines]
-            else:
-                new_sentences[index] = [sentence]
+    # 验证片段数量
+    if len(parts) != expected_parts:
+        logger.warning(f"Part count mismatch: expected {expected_parts}, got {len(parts)}")
+        return None
 
-    return [sentence for sublist in new_sentences for sentence in sublist]
+    # 验证长度限制
+    validation = _validate_length(parts, language, limit, strict)
+    if not validation.is_valid:
+        logger.warning(f"Length validation failed: {validation.reason}")
+        return None
+
+    # 验证覆盖率
+    if not _validate_coverage(original, parts, language):
+        logger.warning(f"Coverage validation failed")
+        return None
+
+    return parts
 
 
-def tokenize_sentence(sentence: str, nlp, use_jieba: bool = False):
-    """Tokenize a sentence using Spacy or jieba (for Chinese)"""
+def _parse_split_content(content: str) -> list[str] | None:
+    """解析分割内容，支持 [br] 标记或换行符"""
+    if "[br]" in content:
+        parts = content.split("[br]")
+    else:
+        parts = content.split("\n")
+        parts = [p for p in parts if p.strip()]
+
+    parts = [p.strip() for p in parts if p.strip()]
+    return parts if parts else None
+
+
+def _filter_short_parts(parts: list[str], language: str) -> list[str]:
+    """过滤过短的片段"""
+    min_len = Config.MIN_SEGMENT_LENGTH
+    if language != "zh":
+        # 英文按词数计算最小长度
+        return [p for p in parts if len(p.split()) >= min_len]
+
+    filtered = [p for p in parts if len(p) >= min_len]
+    if len(filtered) != len(parts):
+        logger.info(f"Filtered {len(parts) - len(filtered)} short parts")
+    return filtered
+
+
+def _validate_length(
+    parts: list[str],
+    language: str,
+    limit: int,
+    strict: bool,
+) -> ValidationResult:
+    """验证片段长度"""
+    tolerance = Config.NON_STRICT_TOLERANCE
+    max_allowed = int(limit * (1 + tolerance))
+
+    for i, part in enumerate(parts):
+        length = len(part) if language == "zh" else len(part.split())
+
+        if length > limit:
+            if strict:
+                return ValidationResult(False, f"Part {i+1}: {length} > {limit}")
+            if length > max_allowed:
+                return ValidationResult(False, f"Part {i+1}: {length} > {max_allowed}")
+            logger.info(f"Part {i+1} slightly exceeds limit: {length} vs {limit}")
+
+    return ValidationResult(True)
+
+
+def _validate_coverage(original: str, parts: list[str], language: str) -> bool:
+    """验证分割覆盖率"""
+    if language == "zh":
+        original_len = len(original)
+        split_len = sum(len(p) for p in parts)
+    else:
+        original_len = len(original.split())
+        split_len = sum(len(p.split()) for p in parts)
+
+    if original_len == 0:
+        return False
+
+    ratio = split_len / original_len
+    return Config.COVERAGE_MIN_RATIO <= ratio <= Config.COVERAGE_MAX_RATIO
+
+
+def _log_split_result(original: str, segments: list[str]) -> None:
+    """记录分割结果"""
+    logger.info(f"[Split] Original: {original}")
+    logger.info(f"[Split] Result: {' || '.join(segments)}")
+
+
+# ==================== 向后兼容 ====================
+def tokenize_sentence(sentence: str, nlp: Language | None, use_jieba: bool = False) -> list[str]:
+    """对句子进行分词（向后兼容）"""
     if use_jieba:
         return list(jieba.cut(sentence))
-    else:
-        doc = nlp(sentence)
-        return [token.text for token in doc]
-
-
-def split_sentence(sentence, num_parts, word_limit=20, index=-1, retry_attempt=0):
-    """Split a long sentence using GPT and return the result as a string."""
-    split_prompt = get_split_prompt(sentence, num_parts, word_limit)
-
-    def valid_split(response_data):
-        choice = response_data["choice"]
-        if f"split{choice}" not in response_data:
-            return {"status": "error", "message": "Missing required key: `split`"}
-        if "[br]" not in response_data[f"split{choice}"]:
-            return {"status": "error", "message": "Split failed, no [br] found"}
-        return {"status": "success", "message": "Split completed"}
-
-    response_dict = ask_llm(split_prompt + " " * retry_attempt, log_title="split_by_meaning")
-    choice = response_dict["choice"]
-    best_split = response_dict[f"split{choice}"]
-    split_points = find_split_positions(sentence, best_split)
-    # split the sentence based on the split points
-    for i, split_point in enumerate(split_points):
-        if i == 0:
-            best_split = sentence[:split_point] + "\n" + sentence[split_point:]
-        else:
-            parts = best_split.split("\n")
-            last_part = parts[-1]
-            parts[-1] = (
-                last_part[: split_point - split_points[i - 1]] + "\n" + last_part[split_point - split_points[i - 1] :]
-            )
-            best_split = "\n".join(parts)
-    if index != -1:
-        print(f"[green]✅ Sentence {index} has been successfully split[/green]")
-    table = Table(title="")
-    table.add_column("Type", style="cyan")
-    table.add_column("Sentence")
-    table.add_row("Original", sentence, style="yellow")
-    table.add_row("Split", best_split.replace("\n", " ||"), style="yellow")
-    print(table)
-
-    return best_split
-
-
-def find_split_positions(original: str, modified: str) -> list:
-    """找到分割位置
-
-    将 LLM 返回的带 [br] 标记的分割结果映射回原始句子的字符位置
-    """
-    split_positions = []
-    parts = modified.split("[br]")
-    start = 0
-    language = "zh"
-    joiner = get_joiner(language)
-
-    # 清理 parts：去除空白和无效部分
-    parts = [p.strip() for p in parts if p.strip()]
-
-    if len(parts) <= 1:
-        logger.warning("No valid [br] split markers found in LLM response")
-        return []
-
-    for i in range(len(parts) - 1):
-        current_part = parts[i]
-
-        # 对于中文，确保当前部分至少包含 3 个字符
-        if language == "zh" and len(current_part) < 3:
-            logger.warning(f"Part {i + 1} too short ({len(current_part)} chars): '{current_part}', skipping")
-            # 将当前部分与下一部分合并，继续查找
-            continue
-
-        max_similarity = 0
-        best_split = None
-
-        # 在原始句子中查找与当前部分最佳匹配的位置
-        for j in range(start + min(3, len(original) - start), len(original)):
-            original_left = original[start:j]
-
-            # 对于中文，直接比较字符串
-            # 对于英文，需要处理空格
-            if language == "zh":
-                modified_left = current_part
-            else:
-                modified_left = joiner.join(current_part.split())
-
-            left_similarity = SequenceMatcher(None, original_left, modified_left).ratio()
-
-            if left_similarity > max_similarity:
-                max_similarity = left_similarity
-                best_split = j
-
-            # 如果相似度很高，提前结束查找
-            if left_similarity >= 0.95:
-                break
-
-        # 验证分割点质量
-        if max_similarity < 0.7:
-            logger.warning(f"Part {i + 1} similarity too low ({max_similarity:.2f}): '{current_part}'")
-            continue
-
-        if best_split is not None:
-            # 确保分割点不会产生空片段或单字片段
-            part_length = best_split - start
-            if language == "zh" and part_length < 3:
-                logger.warning(f"Split point creates too short part ({part_length} chars), skipping")
-                continue
-            split_positions.append(best_split)
-            start = best_split
-        else:
-            logger.warning(f"Unable to find split point for part {i + 1}: '{current_part}'")
-
-    return split_positions
+    if nlp:
+        return [token.text for token in nlp(sentence)]
+    return sentence.split()

@@ -8,45 +8,77 @@ def load_key(key: str):
 
 ## ================================================================
 # @ step4_splitbymeaning.py
-def get_split_prompt(sentence, num_parts=2, word_limit=20):
-    language = load_key("whisper.detected_language")
+def get_split_prompt(sentence, num_parts=2, word_limit=20, language: str = "en"):
+    """
+    生成语义分割 prompt
 
+    Args:
+        sentence: 待分割的句子
+        num_parts: 分割成几部分
+        word_limit: 每部分的词/字数限制
+        language: 语言代码 (如 "zh", "en")
+    """
     # 根据语言设置不同的字数/词数限制说明
     if language == "zh":
         length_unit = "字（characters）"
-        min_length = "10"
-        split_instruction = """
+        min_length = "8"
+        max_allowed = word_limit
+        split_instruction = f"""
 **CRITICAL FOR CHINESE**: Split into meaningful phrases (NOT single characters)!
-- Each part must have at least 10 characters
+- Each part MUST be {max_allowed} characters or LESS - this is a HARD LIMIT
+- Ideal length: 10-18 characters per part
+- Minimum: 8 characters per part
 - Split at natural boundaries: after punctuation, after complete phrases, or at semantic breaks
-- Example: "我们来对本章节的内容做一个总结" → "我们来对本章节的内容[br]做一个总结"
+- Example: "我们来对本章节的内容做一个总结" (18 chars) → "我们来对本章节的内容[br]做一个总结" (11 chars, 7 chars)
+- If a part exceeds {max_allowed} chars, the split is INVALID
 """
     else:
         length_unit = "words"
         min_length = "3"
-        split_instruction = """
+        max_allowed = word_limit
+        split_instruction = f"""
+- Each part MUST be {max_allowed} words or LESS - this is a HARD LIMIT
+- Minimum: 3 words per part
 - Split at natural boundaries: punctuation marks, conjunctions, or complete phrases
-- Each part must have at least 3 words
+- If a part exceeds {max_allowed} words, the split is INVALID
 """
 
-    split_prompt = f"""
-## Role
+    split_prompt = f"""## Role
 You are a professional Netflix subtitle splitter in **{language}**.
 
 ## Task
-Split the given subtitle text into **{num_parts}** parts, each less than **{word_limit}** {length_unit}.
+Split the given subtitle text into **{num_parts}** parts.
 
-1. Maintain sentence meaning coherence according to Netflix subtitle standards
-2. MOST IMPORTANT: Keep parts roughly equal in length (minimum {min_length} {length_unit} each)
-3. Split at natural points like punctuation marks or conjunctions
+## ⚠️ CRITICAL REQUIREMENTS (READ CAREFULLY)
+1. **HARD LIMIT**: Each part MUST be **{max_allowed} or fewer** {length_unit}
+2. **EXACT COUNT**: You must produce exactly **{num_parts}** parts
+3. **MINIMUM**: Each part must have at least {min_length} {length_unit}
+4. **VERIFICATION**: Count characters/words BEFORE outputting - if any part exceeds {max_allowed}, your answer is WRONG
+
+## Splitting Guidelines
+- Maintain sentence meaning coherence according to Netflix subtitle standards
+- Split at natural points like punctuation marks or conjunctions
 {split_instruction}
-4. If provided text is repeated words, simply split at the middle of the repeated words.
+- If text contains repeated words, split at the middle of the repeated words
+
+## Character/Word Count Examples (For Reference)
+For Chinese ({language == "zh"}):
+- "你好世界" = 4 characters ✓
+- "这是一个例子" = 6 characters ✓
+- "这句话刚好二十个字长度的标准" = 14 characters ✓
+
+## Mandatory Verification Step
+Before outputting, you MUST verify EACH part:
+1. Count characters/words in part 1: _____ / {max_allowed} ✓✗
+2. Count characters/words in part 2: _____ / {max_allowed} ✓✗
+{"3. Count characters/words in part 3: _____ / {max_allowed} ✓✗" if num_parts >= 3 else ""}
+4. Total parts: _____ / {num_parts} ✓✗
 
 ## Steps
-1. Analyze the sentence structure, complexity, and key splitting challenges
-2. Generate two alternative splitting approaches with [br] tags at split positions
-3. Compare both approaches highlighting their strengths and weaknesses
-4. Choose the best splitting approach
+1. Analyze the sentence structure and identify natural split points
+2. Generate two alternative splitting approaches
+3. VERIFY both approaches meet the {max_allowed} {length_unit} limit
+4. Choose the best approach that respects ALL requirements
 
 ## Given Text
 <split_this_sentence>
@@ -56,16 +88,15 @@ Split the given subtitle text into **{num_parts}** parts, each less than **{word
 ## Output in only JSON format and no other text
 ```json
 {{
-    "analysis": "Brief description of sentence structure, complexity, and key splitting challenges",
-    "split1": "First splitting approach with [br] tags at split positions",
-    "split2": "Alternative splitting approach with [br] tags at split positions",
-    "assess": "Comparison of both approaches highlighting their strengths and weaknesses",
+    "analysis": "Brief analysis of sentence structure and split strategy",
+    "split1": "First splitting approach with [br] tags (verified under {max_allowed} {length_unit})",
+    "split2": "Alternative splitting approach with [br] tags (verified under {max_allowed} {length_unit})",
+    "assess": "Comparison of both approaches",
     "choice": "1 or 2"
 }}
 ```
 
-Note: Start you answer with ```json and end with ```, do not add any other text.
-""".strip()
+Note: Start your answer with ```json and end with ```, do not add any other text."""
     return split_prompt
 
 
