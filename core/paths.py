@@ -1,6 +1,6 @@
 """Path management for VideoVerse pipeline."""
 from pathlib import Path
-from typing import Optional
+
 from core.config import get_settings
 
 settings = get_settings()
@@ -9,7 +9,7 @@ settings = get_settings()
 class PathManager:
     """Manages all file paths for the pipeline."""
 
-    def __init__(self, base_dir: Optional[Path] = None):
+    def __init__(self, base_dir: Path | None = None):
         self._base_dir = base_dir or Path.cwd()
         self._output_dir = None
 

@@ -1,10 +1,10 @@
 """Step 02: ASR - Automatic Speech Recognition."""
 from pathlib import Path
-from typing import List
+
 from loguru import logger
+
 from core.pipeline.base import PipelineStep
 from core.pipeline.context import PipelineContext
-from core.config import get_settings
 
 
 class ASRStep(PipelineStep):
@@ -18,7 +18,7 @@ class ASRStep(PipelineStep):
         return "step_02_asr"
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         return ["step_01_download"]
 
     async def validate(self, context: PipelineContext) -> bool:
@@ -37,16 +37,15 @@ class ASRStep(PipelineStep):
             Path to output Excel file with transcription results
         """
         video_path = context.get("video_path")
-        language = context.source_language
 
         logger.info(f"Starting ASR processing: {video_path}")
 
         # Import ASR functions here to avoid circular imports
-        from core.asr.ffmpeg_local import ffmpeg_video_to_audio
+        from core.asr.common import save_results
         from core.asr.demucs_local import demucs_audio
+        from core.asr.ffmpeg_local import ffmpeg_video_to_audio
         from core.asr.pydub_local import normalize_audio_volume, split_audio
         from core.asr.whisperx_local import transcribe_audio
-        from core.asr.common import save_results
         from core.paths import paths
 
         # 2.1: Extract audio

@@ -367,6 +367,52 @@ output/
 
 5. **目前无法分别为多个角色配音**，因为 whisperX 的说话人区分能力不够可靠。
 
+## 🧪 测试
+
+项目使用 pytest 进行测试。详情参见 [tests/README.md](tests/README.md)。
+
+### 快速开始
+
+```bash
+# 仅运行单元测试
+pytest -m unit
+
+# 运行带覆盖率的测试
+pytest --cov=core --cov-report=html
+
+# 运行所有测试（排除慢速和 GPU 测试）
+pytest -m "not slow and not gpu"
+```
+
+## 🏗️ 架构
+
+流水线使用基于插件的架构：
+
+- **PipelineStep**：所有处理步骤的抽象基类
+- **PipelineContext**：在步骤之间传递的数据
+- **StepRegistry**：注册和解析步骤依赖关系
+- **PipelineEngine**：编排执行
+
+每个步骤都是独立可测试的，可以被跳过/覆盖。
+
+```
+core/
+├── pipeline/           # 流水线引擎
+│   ├── base.py         # PipelineStep 基类
+│   ├── context.py      # PipelineContext 数据传递
+│   ├── registry.py     # StepRegistry 依赖解析
+│   └── engine.py       # PipelineEngine 执行编排
+│
+├── steps/              # 处理步骤插件
+│   ├── step_02_asr.py  # ASR 步骤示例
+│   └── ...
+│
+├── asr/                # ASR 后端
+├── tts/                # TTS 后端
+├── nlp/                # NLP 工具
+└── utils/              # 核心工具函数
+```
+
 ## 📄 许可证
 
 本项目基于 Apache 2.0 许可证开源。特别感谢以下开源项目的贡献：

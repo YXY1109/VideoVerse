@@ -1,8 +1,10 @@
 """Test Edge TTS backend."""
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+
+import pytest
+
 from core.tts.edge import EdgeTTSBackend
 
 

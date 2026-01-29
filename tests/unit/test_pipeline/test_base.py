@@ -1,8 +1,8 @@
 """Test PipelineStep base class."""
 import pytest
+
 from core.pipeline.base import PipelineStep
 from core.pipeline.context import PipelineContext
-from core.config import Settings
 
 
 class DummyStep(PipelineStep):

@@ -1,12 +1,11 @@
 """Test LLM client functionality."""
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from core.utils.llm import ask_llm, _get_openai_client
+from unittest.mock import MagicMock, patch
+
+from core.utils.llm import _get_openai_client, ask_llm
 
 
 def test_get_openai_client_singleton():
     """Test LLM client singleton."""
-    from core.utils.llm import _get_openai_client
 
     # Reset singleton cache
     _get_openai_client.cache_clear()

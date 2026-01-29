@@ -1,6 +1,7 @@
 """Base class for pipeline steps."""
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any
+
 from core.pipeline.context import PipelineContext
 
 
@@ -14,7 +15,7 @@ class PipelineStep(ABC):
         pass
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         """List of step names this step depends on."""
         return []
 

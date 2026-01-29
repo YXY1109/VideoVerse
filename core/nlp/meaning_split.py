@@ -231,7 +231,7 @@ def _extract_and_validate_segments(
 
     # 验证覆盖率
     if not _validate_coverage(original, parts, language):
-        logger.warning(f"Coverage validation failed")
+        logger.warning("Coverage validation failed")
         return None
 
     return parts

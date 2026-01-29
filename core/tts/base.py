@@ -1,6 +1,5 @@
 """Base class for TTS backends."""
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 
 class TTSBackend(ABC):

@@ -1,10 +1,11 @@
 """Pipeline execution engine."""
-from typing import Any, List, Optional
+from typing import Any
+
 from loguru import logger
-from core.pipeline.registry import StepRegistry
-from core.pipeline.base import PipelineStep
-from core.pipeline.context import PipelineContext
+
 from core.config import Settings, get_settings
+from core.pipeline.context import PipelineContext
+from core.pipeline.registry import StepRegistry
 
 
 class PipelineEngine:
@@ -33,11 +34,11 @@ class PipelineEngine:
 
     async def run(
         self,
-        steps: List[str],
+        steps: list[str],
         video_source: str,
         source_language: str,
         target_language: str,
-        config: Optional[Settings] = None,
+        config: Settings | None = None,
     ) -> PipelineContext:
         """
         Run multiple steps in dependency-resolved order.

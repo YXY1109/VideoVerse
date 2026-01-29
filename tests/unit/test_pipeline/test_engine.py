@@ -1,10 +1,9 @@
 """Test PipelineEngine functionality."""
 import pytest
+
+from core.pipeline.base import PipelineStep
 from core.pipeline.engine import PipelineEngine
 from core.pipeline.registry import StepRegistry
-from core.pipeline.base import PipelineStep
-from core.pipeline.context import PipelineContext
-from core.config import Settings
 
 
 class MockStep(PipelineStep):

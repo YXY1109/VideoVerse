@@ -2,8 +2,10 @@
 import asyncio
 import functools
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, TypeVar, Union
+from typing import TypeVar
+
 from loguru import logger
 
 T = TypeVar("T")
@@ -40,7 +42,7 @@ def async_except_handler(message: str = "Operation failed", max_retries: int = 5
     return decorator
 
 
-def async_check_file_exists(output_path: Union[str, Path, Callable[..., Union[str, Path]]]):
+def async_check_file_exists(output_path: str | Path | Callable[..., str | Path]):
     """
     Async checkpoint decorator - skip execution if output file exists.
 

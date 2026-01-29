@@ -1,5 +1,5 @@
 """Registry for managing pipeline steps."""
-from typing import Dict, List, Set
+
 from core.pipeline.base import PipelineStep
 
 
@@ -7,7 +7,7 @@ class StepRegistry:
     """Pipeline step registry with dependency resolution."""
 
     def __init__(self):
-        self._steps: Dict[str, PipelineStep] = {}
+        self._steps: dict[str, PipelineStep] = {}
 
     def register(self, name: str, step: PipelineStep) -> None:
         """Register a step."""
@@ -19,11 +19,11 @@ class StepRegistry:
             raise KeyError(f"Step '{name}' is not registered")
         return self._steps[name]
 
-    def list_steps(self) -> List[str]:
+    def list_steps(self) -> list[str]:
         """List all registered step names."""
         return list(self._steps.keys())
 
-    def resolve_execution_order(self, step_names: List[str]) -> List[str]:
+    def resolve_execution_order(self, step_names: list[str]) -> list[str]:
         """
         Resolve execution order based on dependencies.
 
@@ -46,8 +46,8 @@ class StepRegistry:
         step_names = list(all_steps)
 
         # Build dependency graph
-        graph: Dict[str, Set[str]] = {name: set() for name in step_names}
-        in_degree: Dict[str, int] = {name: 0 for name in step_names}
+        graph: dict[str, set[str]] = {name: set() for name in step_names}
+        in_degree: dict[str, int] = {name: 0 for name in step_names}
 
         for name in step_names:
             step = self.get(name)

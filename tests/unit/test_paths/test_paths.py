@@ -1,7 +1,9 @@
 """Test PathManager functionality."""
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
+
 from core.paths import PathManager, paths
 
 
@@ -36,7 +38,6 @@ def test_ensure_directories():
 
 def test_global_paths_instance():
     """Test global paths instance is available."""
-    from core.paths import paths
     assert paths is not None
     assert hasattr(paths, 'output_dir')
 

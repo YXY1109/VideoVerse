@@ -1,6 +1,7 @@
 """Pipeline context for passing data between steps."""
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
+
 from core.config import Settings
 
 
@@ -12,7 +13,7 @@ class PipelineContext:
     source_language: str
     target_language: str
     config: Settings
-    storage: Dict[str, Any] = field(default_factory=dict)
+    storage: dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get value from storage."""

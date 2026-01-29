@@ -1,7 +1,6 @@
 """Test PipelineContext functionality."""
-import pytest
-from core.pipeline.context import PipelineContext
 from core.config import Settings
+from core.pipeline.context import PipelineContext
 
 
 def test_context_creation():

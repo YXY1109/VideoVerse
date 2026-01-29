@@ -1,6 +1,7 @@
 """Edge TTS backend."""
 import edge_tts
 from loguru import logger
+
 from core.tts.base import TTSBackend
 
 

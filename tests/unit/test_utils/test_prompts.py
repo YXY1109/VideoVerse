@@ -1,5 +1,4 @@
 """Test prompts module functionality."""
-import pytest
 from core.utils.prompts import (
     get_split_prompt,
     # Add other prompt functions as needed

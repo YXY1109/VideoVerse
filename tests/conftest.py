@@ -1,10 +1,11 @@
 """Shared pytest fixtures for VideoVerse tests."""
-import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from core.config import Settings
 from core.pipeline.context import PipelineContext
-from core.paths import PathManager
 
 
 @pytest.fixture(scope="session")

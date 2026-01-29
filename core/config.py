@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Literal
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     # Video Configuration
     youtube_resolution: str = Field(default="1080", alias="YOUTUBE_RESOLUTION")
-    allowed_video_formats: List[str] = Field(
+    allowed_video_formats: list[str] = Field(
         default=["mp4", "mkv", "webm", "avi"],
         alias="ALLOWED_VIDEO_FORMATS"
     )
