@@ -19,12 +19,13 @@ class TTSBackend(ABC):
         return self._voice
 
     @abstractmethod
-    async def synthesize(self, text: str, output_path: str) -> None:
+    async def synthesize(self, text: str, output_path: str, refer_audio: str | None = None) -> None:
         """
         Synthesize speech from text.
 
         Args:
             text: Input text
             output_path: Where to save the audio file
+            refer_audio: Optional reference audio for voice cloning (Fish, GPT-SoVITS)
         """
         pass

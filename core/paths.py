@@ -78,6 +78,10 @@ class PathManager:
         return self.log_dir / "translation_results.xlsx"
 
     @property
+    def translation_for_subtitles(self) -> Path:
+        return self.log_dir / "translation_for_subtitles.xlsx"
+
+    @property
     def raw_audio_file(self) -> Path:
         return self.audio_dir / "raw.mp3"
 

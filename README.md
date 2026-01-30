@@ -12,7 +12,7 @@
 
 ## 🌟 项目概述
 
-**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，能够生成 Netflix 级别的高质量单行字幕。通过完整的 13 步异步处理流水线，实现从视频下载到最终配音的全自动化处理。
+**VideoVerse** 是一个基于 AI 的视频翻译、本地化和配音工具，能够生成 Netflix 级别的高质量单行字幕。通过完整的 13 步处理流水线，实现从视频下载到最终配音的全自动化处理。
 
 ### 核心特性
 
@@ -23,13 +23,13 @@
 - 🔄 **三步翻译流程** - 直译 → 反思 → 意译，打造电影级翻译质量
 - ✅ **Netflix 标准** - 严格单行字幕，最长 75 字符
 - 🗣️ **多 TTS 支持** - 5 种配音后端（GPT-SoVITS、Azure、OpenAI、Fish、Edge）
-- ⚡ **异步架构** - 全异步流水线，提供 Python API
+- ⚡ **模块化架构** - PipelineStep 模式，清晰依赖管理
 - 🌐 **环境变量配置** - 使用 pydantic-settings 管理配置
 - 🔄 **断点续传** - 详细日志记录，支持从任意步骤恢复
 
 ### 与同类项目的区别
 
-**仅使用单行字幕、卓越的翻译质量、无缝的配音体验、高度模块化的 13 步异步流水线架构**
+**仅使用单行字幕、卓越的翻译质量、无缝的配音体验、高度模块化的 PipelineStep 流水线架构**
 
 ## 🏗️ 13 步处理流水线
 
@@ -74,51 +74,67 @@ VideoVerse/
 ├── .env.example                # 环境变量配置示例
 ├── README.md                   # 项目文档
 │
-├── src/                        # 核心源代码（异步架构）
+├── core/                       # 核心源代码（新架构）
+│   ├── __init__.py            # 统一导出
 │   ├── config.py              # pydantic-settings 配置管理
-│   ├── api.py                 # Python API (异步/同步)
-│   ├── pipeline.py            # 13 步异步流水线
+│   ├── paths.py               # PathManager 路径管理
+│   │
+│   ├── pipeline/              # 流水线框架
+│   │   ├── base.py            # PipelineStep 基类
+│   │   ├── context.py         # PipelineContext 数据传递
+│   │   ├── registry.py        # StepRegistry 依赖解析
+│   │   └── engine.py          # PipelineEngine 执行编排
 │   │
 │   ├── steps/                 # 处理步骤模块（13步）
-│   │   ├── 01_download.py     # ① YouTube 视频下载
-│   │   ├── 02_asr.py          # ② WhisperX 语音识别
-│   │   ├── 03_nlp_split.py    # ③ NLP 句子分割
-│   │   ├── 04_meaning_split.py # ④ AI 语义分割
-│   │   ├── 05_summarize.py    # ⑤ 内容摘要 + 术语提取
-│   │   ├── 06_translate.py    # ⑥ 多步翻译
-│   │   ├── 07_split_sub.py    # ⑦ 字幕长度优化
-│   │   ├── 08_gen_sub.py      # ⑧ 字幕时间轴对齐
-│   │   ├── 09_burn_sub.py     # ⑨ 字幕烧录
-│   │   ├── 10_audio_task.py   # ⑩ 音频任务生成
-│   │   ├── 11_gen_audio.py    # ⑪ TTS 音频生成
-│   │   ├── 12_merge_audio.py  # ⑫ 音频合并
-│   │   └── 13_dubbing.py      # ⑬ 最终配音合成
+│   │   ├── step_01_download.py    # ① YouTube 视频下载
+│   │   ├── step_02_asr.py         # ② WhisperX 语音识别
+│   │   ├── step_03_nlp_split.py   # ③ NLP 句子分割
+│   │   ├── step_04_meaning_split.py # ④ AI 语义分割
+│   │   ├── step_05_summarize.py    # ⑤ 内容摘要 + 术语提取
+│   │   ├── step_06_translate.py    # ⑥ 多步翻译
+│   │   ├── step_07_split_sub.py    # ⑦ 字幕长度优化
+│   │   ├── step_08_gen_sub.py      # ⑧ 字幕时间轴对齐
+│   │   ├── step_09_burn_sub.py     # ⑨ 字幕烧录
+│   │   ├── step_10_audio_task.py   # ⑩ 音频任务生成
+│   │   ├── step_11_gen_audio.py    # ⑪ TTS 音频生成
+│   │   ├── step_12_merge_audio.py  # ⑫ 音频合并
+│   │   └── step_13_dubbing.py      # ⑬ 最终配音合成
 │   │
-│   ├── backends/              # ASR/TTS 后端
-│   │   ├── asr/               # ASR 后端（3种）
-│   │   │   ├── whisperx_local.py   # WhisperX 本地
-│   │   │   ├── whisperx_api.py     # WhisperX API
-│   │   │   └── elevenlabs.py       # ElevenLabs ASR
-│   │   └── tts/               # TTS 后端（5种）
-│   │       ├── azure.py           # Azure TTS
-│   │       ├── openai.py          # OpenAI TTS
-│   │       ├── edge.py            # Edge TTS
-│   │       ├── fish.py            # Fish TTS
-│   │       └── gpt_sovits.py      # GPT-SoVITS
-│   │
-│   ├── tools/                 # 工具模块
-│   │   ├── prompts.py         # AI Prompt 模板
-│   │   ├── translate_lines.py # 三步翻译逻辑
-│   │   ├── audio_preprocess.py # 音频预处理
-│   │   └── spacy_utils/       # NLP 工具
+│   ├── tts/                   # TTS 后端（5种）
+│   │   ├── base.py            # TTSBackend 基类
+│   │   ├── edge.py            # Edge TTS
+│   │   ├── azure.py           # Azure TTS
+│   │   ├── openai.py          # OpenAI TTS
+│   │   ├── fish.py            # Fish TTS
+│   │   └── gpt_sovits.py      # GPT-SoVITS
 │   │
 │   └── utils/                 # 核心工具函数
-│       ├── http.py            # 异步 HTTP 客户端
+│       ├── cache.py           # 缓存管理
 │       ├── llm.py             # LLM API 调用
-│       ├── cache.py           # 异步缓存
 │       ├── decorators.py      # 装饰器
-│       ├── paths.py           # 路径管理
-│       └── common.py          # 通用工具
+│       ├── common.py          # 通用工具
+│       └── prompts.py         # Prompt 模板
+│
+├── tools/                     # 工具模块（根目录）
+│   ├── prompts.py             # 完整 AI Prompt 模板
+│   ├── translate_lines.py     # 翻译逻辑
+│   └── spacy_utils/           # NLP 工具
+│       ├── __init__.py        # 可选依赖处理
+│       ├── load_nlp_model.py
+│       ├── split_by_mark.py
+│       └── ...
+│
+├── temp/                      # 旧实现（用于对比验证）
+│   ├── steps/                 # 旧的步骤实现
+│   └── backends/              # 旧的后端实现
+│
+├── tests/                     # 测试脚本
+│   ├── test_basic.py          # 基础测试
+│   ├── verify_pipeline.py     # 流水线验证
+│   └── compare_outputs.py     # 输出对比
+│
+├── examples/                  # 使用示例
+│   └── run_pipeline.py        # 流水线运行示例
 │
 ├── files/                     # 本地依赖
 │   ├── demucs-main/          # Demucs 人声分离
@@ -176,14 +192,15 @@ https://github.com/user-attachments/assets/47d965b2-b4ab-4a0b-9d08-b49a7bf3508c
 - **pydantic-settings** - 环境变量配置管理
 - **python-dotenv** - .env 文件加载
 
-### 异步框架
-- **httpx** - 异步 HTTP 客户端
-- **asyncio** - 异步任务编排
-- **aiocache** - 异步缓存
+### 架构
+- **PipelineStep 模式** - 清晰的步骤依赖管理
+- **PipelineContext** - 步骤间数据传递
+- **StepRegistry** - 依赖解析和执行编排
+- **工厂模式** - 组件创建和配置
 
 ### AI / ML
 - **WhisperX 3.2** - 词级语音识别与强制对齐
-- **Spacy 3.7** - NLP 自然语言处理
+- **Spacy 3.7** - NLP 自然语言处理（可选依赖）
 - **Transformers 4.48** - HuggingFace 模型支持
 - **PyTorch 2.1** - 深度学习框架 (CUDA 11.8)
 
@@ -207,11 +224,9 @@ https://github.com/user-attachments/assets/47d965b2-b4ab-4a0b-9d08-b49a7bf3508c
 4. **GPT-SoVITS** - 声音克隆 TTS
 5. **Edge TTS** - Microsoft Edge 免费TTS
 
-### ASR 后端（3种）
+### ASR 后端
 
 1. **WhisperX 本地** - large-v3 模型本地运行
-2. **WhisperX API** - 云端 API (302.ai)
-3. **ElevenLabs ASR** - 商业 ASR 服务
 
 ## 📦 环境配置
 
@@ -278,56 +293,91 @@ WHISPER_MODEL=large-v3
 | `TARGET_LANGUAGE` | 目标语言代码 | `en` |
 | `WHISPER_RUNTIME` | ASR 运行模式 (`local`/`api`) | `local` |
 | `WHISPER_MODEL` | Whisper 模型 | `large-v3` |
-| `TTS_METHOD` | TTS 方法 (`azure`/`openai`/`edge`/`fish`/`gpt_sovits`) | `azure` |
+| `TTS_METHOD` | TTS 方法 (`azure`/`openai`/`edge`/`fish`/`gpt_sovits`) | `edge` |
 | `BURN_SUBTITLES` | 是否烧录字幕 (`true`/`false`) | `true` |
-| `DEMUCS` | 是否人声分离 (`true`/`false`) | `true` |
 | `SUBTITLE_MAX_LENGTH` | 字幕最大字符数 | `75` |
 
-完整配置请参考 [`.env.example`](temp/.env.example) 文件。
+完整配置请参考 [`.env.example`](.env.example) 文件。
 
 ## 🔌 Python API
 
-VideoVerse 提供了 Python API，支持异步和同步调用：
+VideoVerse 提供了基于 PipelineStep 的模块化 API：
 
-### 同步调用
-
-```python
-from videoverse import process_video
-
-# 处理视频（同步）
-output_path = process_video(
-    video_source="https://youtube.com/watch?v=xxx",  # 或本地路径
-    source_language="en",
-    target_language="zh",
-    dubbing=True
-)
-print(f"Output: {output_path}")
-```
-
-### 异步调用
+### 基础使用
 
 ```python
 import asyncio
-from videoverse.api import process_video_async
+from core.pipeline import PipelineEngine, StepRegistry
+from core.config import get_settings
+from core.paths import paths
+from core.steps import (
+    create_download_step,
+    create_asr_step,
+    create_nlp_split_step,
+)
 
 async def main():
-    output_path = await process_video_async(
+    # 获取配置
+    settings = get_settings()
+
+    # 创建注册表并注册步骤
+    registry = StepRegistry()
+    registry.register("step_01_download", create_download_step())
+    registry.register("step_02_asr", create_asr_step())
+    registry.register("step_03_nlp_split", create_nlp_split_step())
+
+    # 创建流水线引擎
+    engine = PipelineEngine(registry)
+
+    # 运行流水线
+    context = await engine.run(
+        steps=["step_01_download", "step_02_asr", "step_03_nlp_split"],
         video_source="https://youtube.com/watch?v=xxx",
         source_language="en",
         target_language="zh",
-        dubbing=True
     )
-    print(f"Output: {output_path}")
+
+    print(f"Output: {context.get('nlp_split_result')}")
 
 asyncio.run(main())
 ```
+
+### 运行完整流水线
+
+```python
+from core.steps import (
+    create_download_step, create_asr_step, create_nlp_split_step,
+    create_meaning_split_step, create_summarize_step, create_translate_step,
+    create_split_sub_step, create_gen_sub_step, create_burn_sub_step,
+    create_audio_task_step, create_gen_audio_step, create_merge_audio_step,
+    create_dubbing_step,
+)
+
+# 注册所有步骤
+for name, create_func in [
+    ("step_01_download", create_download_step),
+    ("step_02_asr", create_asr_step),
+    # ... 所有步骤
+]:
+    registry.register(name, create_func())
+
+# 运行完整流水线
+context = await engine.run(
+    steps=[f"step_{i:02d}_{name}" for i, name in enumerate(steps, 1)],
+    video_source="video.mp4",
+    source_language="en",
+    target_language="zh",
+)
+```
+
+更多示例请参考 [`examples/run_pipeline.py`](examples/run_pipeline.py)。
 
 ## 🔌 API 支持
 
 VideoVerse 支持 OpenAI 兼容 API 格式和多种 TTS 接口：
 
-- **大语言模型**: `claude-3-5-sonnet`、`gpt-4o`、`deepseek-v3`、`gemini-2.0-flash`...（按性能排序）
-- **WhisperX**: 本地运行 whisperX (large-v3) 或使用 302.ai API
+- **大语言模型**: `claude-3-5-sonnet`、`gpt-4o`、`deepseek-v3`、`gemini-2.0-flash`...
+- **WhisperX**: 本地运行 whisperX (large-v3)
 - **TTS**: `azure_tts`、`openai_tts`、`fish_tts`、`gpt_sovits`、`edge_tts`
 
 > **提示**: VideoVerse 与 **[302.ai](https://gpt302.saaslink.net/C2oHR9)** 兼容 - 一个 API 密钥访问所有服务（LLM、WhisperX、TTS）。或者使用 Ollama 和 Edge-TTS 本地免费运行，无需 API！
@@ -369,49 +419,63 @@ output/
 
 ## 🧪 测试
 
-项目使用 pytest 进行测试。详情参见 [tests/README.md](tests/README.md)。
+项目提供多种测试脚本：
 
-### 快速开始
+### 基础测试
 
 ```bash
-# 仅运行单元测试
-pytest -m unit
+# 运行基础测试（不需要额外依赖）
+python tests/test_basic.py
+```
 
-# 运行带覆盖率的测试
-pytest --cov=core --cov-report=html
+### 流水线验证
 
-# 运行所有测试（排除慢速和 GPU 测试）
-pytest -m "not slow and not gpu"
+```bash
+# 验证所有步骤
+python tests/verify_pipeline.py
+```
+
+### 输出对比
+
+```bash
+# 对比新旧实现输出
+python tests/compare_outputs.py --temp-dir output/temp --core-dir output/core
 ```
 
 ## 🏗️ 架构
 
-流水线使用基于插件的架构：
-
-- **PipelineStep**：所有处理步骤的抽象基类
-- **PipelineContext**：在步骤之间传递的数据
-- **StepRegistry**：注册和解析步骤依赖关系
-- **PipelineEngine**：编排执行
-
-每个步骤都是独立可测试的，可以被跳过/覆盖。
+流水线使用基于 PipelineStep 的模块化架构：
 
 ```
-core/
-├── pipeline/           # 流水线引擎
-│   ├── base.py         # PipelineStep 基类
-│   ├── context.py      # PipelineContext 数据传递
-│   ├── registry.py     # StepRegistry 依赖解析
-│   └── engine.py       # PipelineEngine 执行编排
-│
-├── steps/              # 处理步骤插件
-│   ├── step_02_asr.py  # ASR 步骤示例
-│   └── ...
-│
-├── asr/                # ASR 后端
-├── tts/                # TTS 后端
-├── nlp/                # NLP 工具
-└── utils/              # 核心工具函数
+core/pipeline/
+├── base.py         # PipelineStep 抽象基类
+├── context.py      # PipelineContext 数据传递
+├── registry.py     # StepRegistry 依赖管理
+└── engine.py       # PipelineEngine 执行编排
+
+core/steps/         # 处理步骤 (PipelineStep 实现)
+├── step_XX_xxx.py  # 每个步骤独立实现
+└── __init__.py     # 导出所有步骤和工厂函数
 ```
+
+**核心组件**:
+
+- **PipelineStep**: 步骤基类，定义 `name`, `dependencies`, `validate()`, `execute()`
+- **PipelineContext**: 在步骤之间传递数据的上下文对象
+- **StepRegistry**: 注册步骤并解析依赖关系
+- **PipelineEngine**: 按依赖顺序执行步骤
+
+**优势**:
+
+- 清晰的依赖管理
+- 独立的步骤测试
+- 支持步骤跳过和重试
+- 更好的错误处理
+
+## 📚 文档
+
+- [迁移指南](docs/MIGRATION.md) - 从旧架构迁移到新架构
+- [测试文档](tests/README.md) - 测试说明
 
 ## 📄 许可证
 

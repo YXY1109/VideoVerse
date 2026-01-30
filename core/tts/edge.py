@@ -12,13 +12,14 @@ class EdgeTTSBackend(TTSBackend):
         super().__init__(voice)
         logger.info(f"Edge TTS initialized with voice: {voice}")
 
-    async def synthesize(self, text: str, output_path: str) -> None:
+    async def synthesize(self, text: str, output_path: str, refer_audio: str | None = None) -> None:
         """
         Synthesize speech using Edge TTS.
 
         Args:
             text: Input text
             output_path: Output audio file path
+            refer_audio: Not used for Edge TTS (kept for compatibility)
         """
         logger.info(f"Synthesizing with Edge TTS: {text[:50]}...")
 

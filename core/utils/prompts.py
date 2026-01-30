@@ -1,22 +1,28 @@
+"""AI Prompt 模板模块（core 版本）。
+
+从 temp/tools/prompts.py 迁移，提供各种 AI 任务所需的 prompt 模板。
+注意：更完整的版本在 tools/prompts.py 中。
+"""
+
 import json
 
 
-# 辅助函数
-def load_key(key: str):
-    return ""
-
-
-## ================================================================
-# @ step4_splitbymeaning.py
-def get_split_prompt(sentence, num_parts=2, word_limit=20, language: str = "en"):
-    """
-    生成语义分割 prompt
+def get_split_prompt(
+    sentence: str,
+    num_parts: int = 2,
+    word_limit: int = 20,
+    language: str = "zh",
+) -> str:
+    """生成语义分割 prompt。
 
     Args:
         sentence: 待分割的句子
         num_parts: 分割成几部分
         word_limit: 每部分的词/字数限制
         language: 语言代码 (如 "zh", "en")
+
+    Returns:
+        分割 prompt 字符串
     """
     # 根据语言设置不同的字数/词数限制说明
     if language == "zh":
@@ -29,8 +35,6 @@ def get_split_prompt(sentence, num_parts=2, word_limit=20, language: str = "en")
 - Ideal length: 10-18 characters per part
 - Minimum: 8 characters per part
 - Split at natural boundaries: after punctuation, after complete phrases, or at semantic breaks
-- Example: "我们来对本章节的内容做一个总结" (18 chars) → "我们来对本章节的内容[br]做一个总结" (11 chars, 7 chars)
-- If a part exceeds {max_allowed} chars, the split is INVALID
 """
     else:
         length_unit = "words"
@@ -40,45 +44,19 @@ def get_split_prompt(sentence, num_parts=2, word_limit=20, language: str = "en")
 - Each part MUST be {max_allowed} words or LESS - this is a HARD LIMIT
 - Minimum: 3 words per part
 - Split at natural boundaries: punctuation marks, conjunctions, or complete phrases
-- If a part exceeds {max_allowed} words, the split is INVALID
 """
 
     split_prompt = f"""## Role
 You are a professional Netflix subtitle splitter in **{language}**.
 
 ## Task
-Split the given subtitle text into **{num_parts}** parts.
+Split the given subtitle text into **{num_parts}** parts, each less than **{word_limit}** {length_unit}.
 
-## ⚠️ CRITICAL REQUIREMENTS (READ CAREFULLY)
-1. **HARD LIMIT**: Each part MUST be **{max_allowed} or fewer** {length_unit}
-2. **EXACT COUNT**: You must produce exactly **{num_parts}** parts
-3. **MINIMUM**: Each part must have at least {min_length} {length_unit}
-4. **VERIFICATION**: Count characters/words BEFORE outputting - if any part exceeds {max_allowed}, your answer is WRONG
-
-## Splitting Guidelines
-- Maintain sentence meaning coherence according to Netflix subtitle standards
-- Split at natural points like punctuation marks or conjunctions
+1. Maintain sentence meaning coherence according to Netflix subtitle standards
+2. MOST IMPORTANT: Keep parts roughly equal in length (minimum {min_length} {length_unit} each)
+3. Split at natural points like punctuation marks or conjunctions
 {split_instruction}
-- If text contains repeated words, split at the middle of the repeated words
-
-## Character/Word Count Examples (For Reference)
-For Chinese ({language == "zh"}):
-- "你好世界" = 4 characters ✓
-- "这是一个例子" = 6 characters ✓
-- "这句话刚好二十个字长度的标准" = 14 characters ✓
-
-## Mandatory Verification Step
-Before outputting, you MUST verify EACH part:
-1. Count characters/words in part 1: _____ / {max_allowed} ✓✗
-2. Count characters/words in part 2: _____ / {max_allowed} ✓✗
-{"3. Count characters/words in part 3: _____ / {max_allowed} ✓✗" if num_parts >= 3 else ""}
-4. Total parts: _____ / {num_parts} ✓✗
-
-## Steps
-1. Analyze the sentence structure and identify natural split points
-2. Generate two alternative splitting approaches
-3. VERIFY both approaches meet the {max_allowed} {length_unit} limit
-4. Choose the best approach that respects ALL requirements
+4. If provided text is repeated words, simply split at the middle of the repeated words
 
 ## Given Text
 <split_this_sentence>
@@ -89,34 +67,38 @@ Before outputting, you MUST verify EACH part:
 ```json
 {{
     "analysis": "Brief analysis of sentence structure and split strategy",
-    "split1": "First splitting approach with [br] tags (verified under {max_allowed} {length_unit})",
-    "split2": "Alternative splitting approach with [br] tags (verified under {max_allowed} {length_unit})",
+    "split1": "First splitting approach with [br] tags at split positions",
+    "split2": "Alternative splitting approach with [br] tags at split positions",
     "assess": "Comparison of both approaches",
     "choice": "1 or 2"
 }}
 ```
 
-Note: Start your answer with ```json and end with ```, do not add any other text."""
+Note: Start you answer with ```json and end with ```, do not add any other text."""
     return split_prompt
 
 
-"""{{
-    "analysis": "Brief analysis of the text structure",
-    "split": "Complete sentence with [br] tags at split positions"
-}}"""
+def get_summary_prompt(
+    source_content: str,
+    src_lang: str = "zh",
+    tgt_lang: str = "en",
+    custom_terms_json: dict | None = None,
+) -> str:
+    """生成摘要和术语提取 prompt。
 
+    Args:
+        source_content: 源文本内容
+        src_lang: 源语言代码
+        tgt_lang: 目标语言代码
+        custom_terms_json: 自定义术语（可选）
 
-## ================================================================
-# @ step4_1_summarize.py
-def get_summary_prompt(source_content, custom_terms_json=None):
-    src_lang = load_key("whisper.detected_language")
-    tgt_lang = load_key("target_language")
-
-    # add custom terms note
+    Returns:
+        摘要 prompt 字符串
+    """
     terms_note = ""
     if custom_terms_json:
         terms_list = []
-        for term in custom_terms_json["terms"]:
+        for term in custom_terms_json.get("terms", []):
             terms_list.append(f"- {term['src']}: {term['tgt']} ({term['note']})")
         terms_note = "\n### Existing Terms\nPlease exclude these terms in your extraction:\n" + "\n".join(terms_list)
 
@@ -132,16 +114,6 @@ For the provided {src_lang} video text:
 3. Provide brief explanation for each term
 
 {terms_note}
-
-Steps:
-1. Topic Summary:
-   - Quick scan for general understanding
-   - Write two sentences: first for main topic, second for key point
-2. Term Extraction:
-   - Mark professional terms and names (excluding those listed in Existing Terms)
-   - Provide {tgt_lang} translation or keep original
-   - Add brief explanation
-   - Extract less than 15 terms
 
 ## INPUT
 <text>
@@ -161,298 +133,9 @@ Steps:
   ]
 }}
 
-## Example
-{{
-  "theme": "本视频介绍人工智能在医疗领域的应用现状。重点展示了AI在医学影像诊断和药物研发中的突破性进展。",
-  "terms": [
-    {{
-      "src": "Machine Learning",
-      "tgt": "机器学习",
-      "note": "AI的核心技术，通过数据训练实现智能决策"
-    }},
-    {{
-      "src": "CNN",
-      "tgt": "CNN",
-      "note": "卷积神经网络，用于医学图像识别的深度学习模型"
-    }}
-  ]
-}}
-
 Note: Start you answer with ```json and end with ```, do not add any other text.
 """.strip()
     return summary_prompt
 
 
-## ================================================================
-# @ step5_translate.py & translate_lines.py
-def generate_shared_prompt(previous_content_prompt, after_content_prompt, summary_prompt, things_to_note_prompt):
-    return f"""### Context Information
-<previous_content>
-{previous_content_prompt}
-</previous_content>
-
-<subsequent_content>
-{after_content_prompt}
-</subsequent_content>
-
-### Content Summary
-{summary_prompt}
-
-### Points to Note
-{things_to_note_prompt}"""
-
-
-def get_prompt_faithfulness(lines, shared_prompt):
-    target_language = load_key("target_language")
-    # Split lines by \n
-    line_splits = lines.split("\n")
-
-    json_dict = {}
-    for i, line in enumerate(line_splits, 1):
-        json_dict[f"{i}"] = {"origin": line, "direct": f"direct {target_language} translation {i}."}
-    json_format = json.dumps(json_dict, indent=2, ensure_ascii=False)
-
-    src_language = load_key("whisper.detected_language")
-    prompt_faithfulness = f"""
-## Role
-You are a professional Netflix subtitle translator, fluent in both {src_language} and
-{target_language}, as well as their respective cultures.
-Your expertise lies in accurately understanding the semantics and structure of the original
-{src_language} text and faithfully translating it into {target_language} while preserving the
-original meaning.
-
-## Task
-We have a segment of original {src_language} subtitles that need to be directly translated
-into {target_language}. These subtitles come from a specific context and may contain specific
-themes and terminology.
-
-1. Translate the original {src_language} subtitles into {target_language} line by line
-2. Ensure the translation is faithful to the original, accurately conveying the original
-   meaning
-3. Consider the context and professional terminology
-
-{shared_prompt}
-
-<translation_principles>
-1. Faithful to the original: Accurately convey the content and meaning of the original text,
-   without arbitrarily changing, adding, or omitting content.
-2. Accurate terminology: Use professional terms correctly and maintain consistency in
-   terminology.
-3. Understand the context: Fully comprehend and reflect the background and contextual
-   relationships of the text.
-</translation_principles>
-
-## INPUT
-<subtitles>
-{lines}
-</subtitles>
-
-## Output in only JSON format and no other text
-```json
-{json_format}
-```
-
-Note: Start you answer with ```json and end with ```, do not add any other text.
-"""
-    return prompt_faithfulness.strip()
-
-
-def get_prompt_expressiveness(faithfulness_result, lines, shared_prompt):
-    target_language = load_key("target_language")
-    json_format = {
-        key: {
-            "origin": value["origin"],
-            "direct": value["direct"],
-            "reflect": "your reflection on direct translation",
-            "free": "your free translation",
-        }
-        for key, value in faithfulness_result.items()
-    }
-    json_format = json.dumps(json_format, indent=2, ensure_ascii=False)
-
-    src_language = load_key("whisper.detected_language")
-    prompt_expressiveness = f"""
-## Role
-You are a professional Netflix subtitle translator and language consultant.
-Your expertise lies not only in accurately understanding the original {src_language} but also
-in optimizing the {target_language} translation to better suit the target language's
-expression habits and cultural background.
-
-## Task
-We already have a direct translation version of the original {src_language} subtitles.
-Your task is to reflect on and improve these direct translations to create more natural and
-fluent {target_language} subtitles.
-
-1. Analyze the direct translation results line by line, pointing out existing issues
-2. Provide detailed modification suggestions
-3. Perform free translation based on your analysis
-4. Do not add comments or explanations in the translation, as the subtitles are for the
-   audience to read
-5. Do not leave empty lines in the free translation, as the subtitles are for the audience
-   to read
-
-{shared_prompt}
-
-<Translation Analysis Steps>
-Please use a two-step thinking process to handle the text line by line:
-
-1. Direct Translation Reflection:
-   - Evaluate language fluency
-   - Check if the language style is consistent with the original text
-   - Check the conciseness of the subtitles, point out where the translation is too wordy
-
-2. {target_language} Free Translation:
-   - Aim for contextual smoothness and naturalness, conforming to {target_language}
-     expression habits
-   - Ensure it's easy for {target_language} audience to understand and accept
-   - Adapt the language style to match the theme (e.g., use casual language for
-     tutorials, professional terminology for technical content, formal language for
-     documentaries)
-</Translation Analysis Steps>
-
-## INPUT
-<subtitles>
-{lines}
-</subtitles>
-
-## Output in only JSON format and no other text
-```json
-{json_format}
-```
-
-Note: Start you answer with ```json and end with ```, do not add any other text.
-"""
-    return prompt_expressiveness.strip()
-
-
-## ================================================================
-# @ step6_splitforsub.py
-def get_align_prompt(src_sub, tr_sub, src_part):
-    targ_lang = load_key("target_language")
-    src_lang = load_key("whisper.detected_language")
-    src_splits = src_part.split("\n")
-    num_parts = len(src_splits)
-    src_part = src_part.replace("\n", " [br] ")
-    align_parts_json = ",".join(
-        f'''
-        {{
-            "src_part_{i + 1}": "{src_splits[i]}",
-            "target_part_{i + 1}": "Corresponding aligned {targ_lang} subtitle part"
-        }}'''
-        for i in range(num_parts)
-    )
-
-    align_prompt = f'''
-## Role
-You are a Netflix subtitle alignment expert fluent in both {src_lang} and {targ_lang}.
-
-## Task
-We have {src_lang} and {targ_lang} original subtitles for a Netflix program, as well as a
-pre-processed split version of {src_lang} subtitles.
-Your task is to create the best splitting scheme for the {targ_lang} subtitles based on this
-information.
-
-1. Analyze the word order and structural correspondence between {src_lang} and {targ_lang}
-   subtitles
-2. Split the {targ_lang} subtitles according to the pre-processed {src_lang} split version
-3. Never leave empty lines. If it's difficult to split based on meaning, you may appropriately
-   rewrite the sentences that need to be aligned
-4. Do not add comments or explanations in the translation, as the subtitles are for the audience
-   to read
-
-## INPUT
-<subtitles>
-{src_lang} Original: "{src_sub}"
-{targ_lang} Original: "{tr_sub}"
-Pre-processed {src_lang} Subtitles ([br] indicates split points): {src_part}
-</subtitles>
-
-## Output in only JSON format and no other text
-```json
-{{
-    "analysis": "Brief analysis of word order, structure, and semantic correspondence between two subtitles",
-    "align": [
-        {align_parts_json}
-    ]
-}}
-```
-
-Note: Start you answer with ```json and end with ```, do not add any other text.
-'''.strip()
-    return align_prompt
-
-
-## ================================================================
-def get_subtitle_trim_prompt(text, duration):
-    rule = """Consider a. Reducing filler words without modifying meaningful content.
-b. Omitting unnecessary modifiers or pronouns, for example:
-    - "Please explain your thought process" can be shortened to "Please explain thought
-      process"
-    - "We need to carefully analyze this complex problem" can be shortened to "We need to
-      analyze this problem"
-    - "Let's discuss the various different perspectives on this topic" can be shortened to
-      "Let's discuss different perspectives on this topic"
-    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you
-      describe yesterday's experience\""""
-
-    trim_prompt = f'''
-## Role
-You are a professional subtitle editor, editing and optimizing lengthy subtitles that exceed
-voiceover time before handing them to voice actors.
-Your expertise lies in cleverly shortening subtitles slightly while ensuring the original
-meaning and structure remain unchanged.
-
-## INPUT
-<subtitles>
-Subtitle: "{text}"
-Duration: {duration} seconds
-</subtitles>
-
-## Processing Rules
-{rule}
-
-## Processing Steps
-Please follow these steps and provide the results in the JSON output:
-1. Analysis: Briefly analyze the subtitle's structure, key information, and filler words that
-   can be omitted.
-2. Trimming: Based on the rules and analysis, optimize the subtitle by making it more concise
-   according to the processing rules.
-
-## Output in only JSON format and no other text
-```json
-{{
-    "analysis": "Brief analysis of the subtitle, including structure, key information, and
-                 potential processing locations",
-    "result": "Optimized and shortened subtitle in the original subtitle language"
-}}
-```
-
-Note: Start you answer with ```json and end with ```, do not add any other text.
-'''.strip()
-    return trim_prompt
-
-
-## ================================================================
-# @ tts_main
-def get_correct_text_prompt(text):
-    return f"""
-## Role
-You are a text cleaning expert for TTS (Text-to-Speech) systems.
-
-## Task
-Clean the given text by:
-1. Keep only basic punctuation (.,?!)
-2. Preserve the original meaning
-
-## INPUT
-{text}
-
-## Output in only JSON format and no other text
-```json
-{{
-    "text": "cleaned text here"
-}}
-```
-
-Note: Start you answer with ```json and end with ```, do not add any other text.
-""".strip()
+__all__ = ["get_split_prompt", "get_summary_prompt"]
