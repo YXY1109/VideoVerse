@@ -228,3 +228,5 @@ tmpclaude-*
 nul
 /temp/
 /pyproject_backup.toml
+/mp3_to_text/files/
+/mp3_to_text/srt/
