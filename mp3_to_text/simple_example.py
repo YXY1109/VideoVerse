@@ -16,10 +16,10 @@ now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 OUTPUT_SRT = f"srt/{video_name}_{now}.srt"  # 输出字幕文件路径
 print(f"正在处理文件: {OUTPUT_SRT}")
 
-#tiny.en, tiny, base.en, base, small.en, small, medium.en, medium, large-v1, large-v2, large-v3,
+# tiny.en, tiny, base.en, base, small.en, small, medium.en, medium, large-v1, large-v2, large-v3,
 # large, distil-large-v2, distil-medium.en, distil-small.en, distil-large-v3, distil-large-v3.5, large-v3-turbo, turbo
-#
-model_size = "distil-large-v3"
+
+model_size = "large-v3"
 # model_size = "tiny"
 
 # 执行转换
